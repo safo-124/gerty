@@ -87,6 +87,7 @@ export default function FundMePage() {
   const [error, setError] = useState('');
   const [donations, setDonations] = useState([]);
   const [summary, setSummary] = useState({ totalAmount: 0, totalDonations: 0 });
+  const [infoMessage, setInfoMessage] = useState('');
   const [formData, setFormData] = useState(defaultFormData);
   const [formErrors, setFormErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState({ success: '', error: '' });
@@ -119,6 +120,7 @@ export default function FundMePage() {
         totalAmount: data.summary?.totalAmount || 0,
         totalDonations: data.summary?.totalDonations || data.donations?.length || 0,
       });
+      setInfoMessage(data.fallback ? data.message || '' : '');
     } catch (err) {
       console.error('Fund Me donations fetch error:', err);
       setError(err.message || 'Unable to load donations');
@@ -480,6 +482,11 @@ export default function FundMePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {infoMessage && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-700">
+                  {infoMessage}
+                </div>
+              )}
               {loading ? (
                 <div className="flex min-h-[160px] items-center justify-center">
                   <LoadingSpinner />

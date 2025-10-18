@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+
+const isMissingDonationTable = (error) => {
+  if (!error) return false;
+  if (error.code === 'P2021' || error.code === 'P2010') return true;
+  const message = typeof error.message === 'string' ? error.message : '';
+  return message.includes('Donation') && message.includes('doesn') && message.includes('exist');
+};
 import { donationSchema } from '@/lib/validation';
 
 export async function GET() {
@@ -24,6 +31,18 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Fund Me donations GET error:', error);
+    if (isMissingDonationTable(error)) {
+      return NextResponse.json({
+        donations: [],
+        summary: {
+          totalAmount: 0,
+          totalDonations: 0,
+        },
+        fallback: true,
+        message:
+          'Donation storage is not ready yet. Run: npx prisma migrate dev --name add_donations_and_trainer_approval',
+      });
+    }
     return NextResponse.json({ error: 'Unable to load donations at this time' }, { status: 500 });
   }
 }
