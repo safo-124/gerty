@@ -9,6 +9,16 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const dashboardHref = user
+    ? user.role === 'TRAINER'
+      ? '/dashboard/trainer'
+      : user.role === 'ADMIN'
+        ? '/dashboard/admin'
+        : '/dashboard/student'
+    : '/dashboard/student';
+
+  const dashboardLabel = user?.role === 'ADMIN' ? 'Admin Console' : 'Dashboard';
+
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-lg sticky top-0 z-40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,11 +38,14 @@ export default function Navbar() {
             <Link href="/tournaments" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Tournaments
             </Link>
+            <Link href="/fund-me" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              Fund Me
+            </Link>
             
             {user ? (
               <>
-                <Link href={user.role === 'TRAINER' ? '/dashboard/trainer' : '/dashboard/student'} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-                  Dashboard
+                <Link href={dashboardHref} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+                  {dashboardLabel}
                 </Link>
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -83,11 +96,14 @@ export default function Navbar() {
             <Link href="/tournaments" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">
               Tournaments
             </Link>
+            <Link href="/fund-me" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">
+              Fund Me
+            </Link>
             
             {user ? (
               <>
-                <Link href={user.role === 'TRAINER' ? '/dashboard/trainer' : '/dashboard/student'} className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">
-                  Dashboard
+                <Link href={dashboardHref} className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">
+                  {dashboardLabel}
                 </Link>
                 <div className="pt-2">
                   <span className="block text-sm text-gray-600 dark:text-gray-400 mb-2">

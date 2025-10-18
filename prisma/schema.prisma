@@ -68,6 +68,7 @@ model User {
   trainingRequestsAsStudent TrainingRequest[] @relation("StudentTrainingRequests")
   trainingRequestsAsTrainer TrainingRequest[] @relation("TrainerTrainingRequests")
   notificationPreference NotificationPreference?
+  donations Donation[]
 }
 
 model TrainerProfile {
@@ -82,6 +83,7 @@ model TrainerProfile {
   rating          Int?     // Chess rating (ELO)
   hourlyRate      Float?   // Price per hour
   availability    String?  @db.Text // JSON or text describing availability
+  approved        Boolean  @default(false)
   
   // Advertisement info
   featured        Boolean  @default(false)
@@ -217,6 +219,20 @@ model Review {
   createdAt   DateTime @default(now())
   
   @@index([trainerId])
+}
+
+model Donation {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String?
+  amount    Float
+  currency  String   @default("USD")
+  message   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model NotificationPreference {

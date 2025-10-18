@@ -17,12 +17,19 @@ A comprehensive web application for chess training and tournaments, connecting s
 - 🎯 **Host Tournaments** - Create and organize chess tournaments
 - 📊 **View Analytics** - Track students and earnings
 
+### For Super Admins
+- ✅ **Approve Trainers** - Vet new instructors before they go live
+- 🧑‍🎓 **Monitor Students** - Review learner growth and onboarding
+- 🌍 **Steward Fund Me** - Track donations fueling outreach programs
+- 🗓️ **Launch Tournaments** - Spin up events on behalf of trainers
+
 ### General Features
 - 🔐 **Secure Authentication** - Role-based access for students and trainers
 - 📱 **Fully Responsive** - Beautiful mobile and desktop experience
 - 🎨 **Modern UI** - Gradient designs, animations, and smooth transitions
 - 🌙 **Dark Mode** - Full dark mode support
 - 📬 **Automated Reminders** - Configurable email nudges before lessons and events
+- 🌍 **Fund Me Outreach** - Public storytelling page with donor recognition and transparent impact stats
 
 ## 🚀 Tech Stack
 
@@ -99,14 +106,17 @@ chess/
 ├── app/
 │   ├── api/              # API routes
 │   │   ├── auth/         # Authentication endpoints
+│   │   ├── admin/        # Super admin management APIs
+│   │   ├── fund-me/      # Donation collection endpoints
 │   │   ├── trainers/     # Trainer management
 │   │   ├── tournaments/  # Tournament management
 │   │   └── lessons/      # Lesson management
 │   ├── login/            # Login page
 │   ├── register/         # Registration page
+│   ├── fund-me/          # Fundraising landing page & donation form
 │   ├── trainers/         # Trainers listing & profiles
 │   ├── tournaments/      # Tournament pages
-│   └── dashboard/        # User dashboards
+│   └── dashboard/        # User dashboards (student, trainer, admin)
 ├── components/
 │   ├── ui/               # Reusable UI components
 │   └── Navbar.js         # Navigation component
@@ -154,6 +164,18 @@ chess/
 - `POST /api/lessons` - Book lesson
 - `PUT /api/lessons/[id]` - Update lesson
 - `DELETE /api/lessons/[id]` - Cancel lesson
+
+### Fund Me & Donations
+- `GET /api/fund-me/donations` - Public donation summary
+- `POST /api/fund-me/donations` - Submit a new donation
+
+### Super Admin Console
+- `GET /api/admin/trainers` - List trainer profiles, filterable by status
+- `POST /api/admin/trainers/[id]/approve` - Approve a trainer
+- `GET /api/admin/students` - List all students with profile details
+- `GET /api/admin/funds` - View donation ledger and totals
+- `GET /api/admin/tournaments` - Review tournaments and participant counts
+- `POST /api/admin/tournaments` - Create a tournament on behalf of an organizer
 
 ## 🎨 Design Features
 
