@@ -1,0 +1,231 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TRAINER
+  ADMIN
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum LessonStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingRequestStatus {
+  PENDING_PAYMENT
+  PENDING_TRAINER_CONFIRMATION
+  SCHEDULED
+  COMPLETED
+  DECLINED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          UserRole
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Trainer specific fields
+  trainerProfile TrainerProfile?
+  
+  // Student specific fields
+  studentProfile StudentProfile?
+  
+  // Relations
+  enrolledTournaments TournamentParticipant[]
+  lessonsAsStudent    Lesson[] @relation("StudentLessons")
+  lessonsAsTrainer    Lesson[] @relation("TrainerLessons")
+  trainingRequestsAsStudent TrainingRequest[] @relation("StudentTrainingRequests")
+  trainingRequestsAsTrainer TrainingRequest[] @relation("TrainerTrainingRequests")
+  notificationPreference NotificationPreference?
+}
+
+model TrainerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title           String?  // e.g., "International Master", "FIDE Master"
+  bio             String?  @db.Text
+  specialties     String[] // e.g., ["Openings", "Endgames", "Tactics"]
+  experience      Int?     // years of experience
+  rating          Int?     // Chess rating (ELO)
+  hourlyRate      Float?   // Price per hour
+  availability    String?  @db.Text // JSON or text describing availability
+  
+  // Advertisement info
+  featured        Boolean  @default(false)
+  profileImage    String?
+  coverImage      String?
+  videoUrl        String?
+  
+  // Stats
+  totalStudents   Int      @default(0)
+  totalLessons    Int      @default(0)
+  averageRating   Float?   @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  reviews         Review[]
+  tournaments     Tournament[]
+}
+
+model StudentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  currentRating   Int?
+  targetRating    Int?
+  preferredStyle  String?  // e.g., "Aggressive", "Positional"
+  goals           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Tournament {
+  id              String   @id @default(cuid())
+  name            String
+  description     String   @db.Text
+  organizerId     String
+  organizer       TrainerProfile @relation(fields: [organizerId], references: [id])
+  
+  startDate       DateTime
+  endDate         DateTime
+  registrationEnd DateTime
+  
+  maxParticipants Int?
+  entryFee        Float?   @default(0)
+  prizePool       Float?
+  
+  format          String   // e.g., "Swiss", "Round Robin", "Knockout"
+  timeControl     String   // e.g., "Rapid", "Blitz", "Classical"
+  status          TournamentStatus @default(UPCOMING)
+  
+  image           String?
+  rules           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  participants    TournamentParticipant[]
+}
+
+model TournamentParticipant {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  registeredAt  DateTime @default(now())
+  score         Float?   @default(0)
+  rank          Int?
+  
+  @@unique([tournamentId, userId])
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     User     @relation("StudentLessons", fields: [studentId], references: [id], onDelete: Cascade)
+  trainerId   String
+  trainer     User     @relation("TrainerLessons", fields: [trainerId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?  @db.Text
+  scheduledAt DateTime
+  duration    Int      // in minutes
+  status      LessonStatus @default(SCHEDULED)
+  
+  meetingLink String?
+  notes       String?  @db.Text
+  trainingRequestId String? @unique
+  trainingRequest   TrainingRequest? @relation("RequestLesson", fields: [trainingRequestId], references: [id], onDelete: SetNull)
+  reminderSentAt    DateTime?
+  reminderLastAttemptAt DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TrainingRequest {
+  id                 String                 @id @default(cuid())
+  studentId          String
+  student            User                   @relation("StudentTrainingRequests", fields: [studentId], references: [id], onDelete: Cascade)
+  trainerId          String
+  trainer            User                   @relation("TrainerTrainingRequests", fields: [trainerId], references: [id], onDelete: Cascade)
+  status             TrainingRequestStatus  @default(PENDING_PAYMENT)
+  paymentStatus      PaymentStatus          @default(PENDING)
+  amount             Float
+  currency           String                 @default("USD")
+  preferredSchedule  DateTime?
+  duration           Int?
+  focusAreas         String?                @db.Text
+  message            String?                @db.Text
+  paymentReference   String?
+  paidAt             DateTime?
+  lesson             Lesson?                @relation("RequestLesson")
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  trainerId   String
+  trainer     TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  
+  reviewerName  String
+  reviewerEmail String
+  rating        Int    // 1-5 stars
+  comment       String @db.Text
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([trainerId])
+}
+
+model NotificationPreference {
+  id                     String @id @default(cuid())
+  userId                 String @unique
+  user                   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonRemindersEnabled Boolean @default(true)
+  tournamentRemindersEnabled Boolean @default(true)
+  reminderOffsetMinutes  Int     @default(60)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}

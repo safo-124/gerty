@@ -1,36 +1,204 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ChessMaster - Chess Training & Tournament Platform 🏆♟️
 
-## Getting Started
+A comprehensive web application for chess training and tournaments, connecting students with expert trainers and hosting competitive events.
 
-First, run the development server:
+## ✨ Features
+
+### For Students
+- 🔍 **Find Expert Trainers** - Browse and filter trainers by specialty, rating, and price
+- 📚 **Book Lessons** - Schedule one-on-one training sessions
+- 🏆 **Join Tournaments** - Compete in various tournament formats
+- 📈 **Track Progress** - Monitor your improvement and rating progression
+- ⭐ **Leave Reviews** - Rate and review trainers
+
+### For Trainers
+- 👨‍🏫 **Create Profile** - Showcase your expertise, rating, and specialties
+- 💼 **Manage Lessons** - Schedule and organize training sessions
+- 🎯 **Host Tournaments** - Create and organize chess tournaments
+- 📊 **View Analytics** - Track students and earnings
+
+### General Features
+- 🔐 **Secure Authentication** - Role-based access for students and trainers
+- 📱 **Fully Responsive** - Beautiful mobile and desktop experience
+- 🎨 **Modern UI** - Gradient designs, animations, and smooth transitions
+- 🌙 **Dark Mode** - Full dark mode support
+- 📬 **Automated Reminders** - Configurable email nudges before lessons and events
+
+## 🚀 Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Database**: PostgreSQL with Prisma ORM
+- **Styling**: Tailwind CSS 4
+- **Authentication**: JWT-based auth
+- **Language**: JavaScript (ES6+)
+
+## 📋 Prerequisites
+
+- Node.js 18+ 
+- PostgreSQL database
+- npm or yarn
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd chess
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Update `.env` with your database credentials and JWT secret:
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/chessmaster"
+   JWT_SECRET="your-super-secret-jwt-key"
+   RESEND_API_KEY="your-resend-api-key"
+   NOTIFICATION_FROM_EMAIL="ChessMaster <notifications@yourdomain.com>"
+   APP_BASE_URL="http://localhost:3000"
+   # Optional overrides
+   DEFAULT_REMINDER_OFFSET_MINUTES=60
+   REMINDER_LOOKAHEAD_MINUTES=180
+   ```
+
+4. **Set up the database**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+### ⏰ Reminder Service
+
+Automated lesson reminders are delivered by a lightweight Node script. Configure a cron job (or task scheduler) to run it periodically:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run reminders
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The script checks for upcoming lessons within the configured look-ahead window and emails trainers and students according to their dashboard preferences. Ensure your environment variables are set (see above) before enabling the job.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Project Structure
 
-## Learn More
+```
+chess/
+├── app/
+│   ├── api/              # API routes
+│   │   ├── auth/         # Authentication endpoints
+│   │   ├── trainers/     # Trainer management
+│   │   ├── tournaments/  # Tournament management
+│   │   └── lessons/      # Lesson management
+│   ├── login/            # Login page
+│   ├── register/         # Registration page
+│   ├── trainers/         # Trainers listing & profiles
+│   ├── tournaments/      # Tournament pages
+│   └── dashboard/        # User dashboards
+├── components/
+│   ├── ui/               # Reusable UI components
+│   └── Navbar.js         # Navigation component
+├── contexts/
+│   └── AuthContext.js    # Authentication context
+├── lib/
+│   ├── prisma.js         # Prisma client
+│   ├── auth.js           # Auth utilities
+│   └── validation.js     # Input validation schemas
+└── prisma/
+    └── schema.prisma     # Database schema
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🗄️ Database Schema
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Main Models:
+- **User** - Base user account (students & trainers)
+- **TrainerProfile** - Extended trainer information
+- **StudentProfile** - Extended student information
+- **Tournament** - Tournament details and management
+- **Lesson** - Training session bookings
+- **Review** - Trainer reviews and ratings
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔑 API Endpoints
 
-## Deploy on Vercel
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Get current user
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Trainers
+- `GET /api/trainers` - List trainers (with filters)
+- `GET /api/trainers/[id]` - Get trainer profile
+- `PUT /api/trainers/profile` - Update trainer profile
+- `POST /api/trainers/[id]/reviews` - Add review
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Tournaments
+- `GET /api/tournaments` - List tournaments
+- `POST /api/tournaments` - Create tournament
+- `GET /api/tournaments/[id]` - Get tournament details
+- `POST /api/tournaments/[id]/register` - Register for tournament
+
+### Lessons
+- `GET /api/lessons` - List lessons
+- `POST /api/lessons` - Book lesson
+- `PUT /api/lessons/[id]` - Update lesson
+- `DELETE /api/lessons/[id]` - Cancel lesson
+
+## 🎨 Design Features
+
+- **Gradient Backgrounds** - Beautiful blue, purple, and pink gradients
+- **Animated Cards** - Hover effects and smooth transitions
+- **Responsive Grid** - Adapts to all screen sizes
+- **Modern Typography** - Clean, readable fonts
+- **Icon Integration** - Chess-themed emojis and icons
+- **Dark Mode** - Full dark theme support
+
+## 🔒 Security
+
+- Password hashing with bcrypt
+- JWT token authentication
+- Role-based access control
+- Input validation with Zod
+- SQL injection prevention via Prisma
+
+## 📱 Mobile Optimization
+
+All pages are fully responsive with:
+- Touch-friendly interfaces
+- Mobile navigation menu
+- Optimized layouts for small screens
+- Fast loading times
+
+## 🚧 Future Enhancements
+
+- [ ] Payment integration (Stripe/PayPal)
+- [ ] Real-time chess board for lessons
+- [ ] Live tournament brackets
+- [ ] Chat between students and trainers
+- [ ] Email notifications
+- [ ] Video lesson recordings
+- [ ] Advanced analytics dashboard
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 👥 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+Built with ❤️ for chess enthusiasts worldwide ♟️
+
