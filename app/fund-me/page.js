@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,26 +16,48 @@ import { Label } from '@/components/ui/label';
 import LoadingSpinner from '@/components/ui/Loading';
 import { donationSchema } from '@/lib/validation';
 
-const BACKGROUND_GRADIENT = 'bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500';
+const BACKGROUND_GRADIENT = 'bg-gradient-to-br from-purple-600 via-pink-600 to-rose-500';
 
-const impactHighlights = [
+const impactPrograms = [
   {
-    title: 'Chess Labs in Ghana',
+    id: 'deprived-kids',
+    icon: '🏫',
+    title: 'Empowering Deprived Children',
     description:
-      'Portable boards, puzzle sets, and weekend coaching for 120 students across Accra and Kumasi.',
-    metric: '120 kids weekly',
+      'Chess education in underserved neighborhoods—bringing strategy, confidence, and hope to kids who need it most.',
+    metric: '240 kids reached',
+    costPerChild: 35,
+    outcomes: ['Improved focus & discipline', 'Problem-solving skills', 'Safe after-school space'],
   },
   {
-    title: 'Girls Who Play Initiative',
+    id: 'street-kids',
+    icon: '🛣️',
+    title: 'Street Children Initiative',
     description:
-      'Scholarships and mentorship pairing experienced women coaches with rising talents in Kenya.',
-    metric: '60 scholarships',
+      'Reach vulnerable street youth with chess programs as a bridge to education, stability, and community belonging.',
+    metric: '85 youth empowered',
+    costPerChild: 50,
+    outcomes: ['Stability & purpose', 'Re-entry to education', 'Mentorship networks'],
   },
   {
-    title: 'Tournament Travel Grants',
+    id: 'blind-deaf',
+    icon: '👁️',
+    title: 'Inclusive Chess for All Abilities',
     description:
-      'Covering visas, transport, and accommodations so rural prodigies can compete on the continental stage.',
-    metric: '18 trips funded',
+      'Adaptive chess boards, braille notation, and specialized coaching for blind and deaf communities—chess is universal.',
+    metric: '45 players',
+    costPerChild: 60,
+    outcomes: ['Adaptive equipment', 'Specialized training', 'Competition access'],
+  },
+  {
+    id: 'mental-health',
+    icon: '🧠',
+    title: 'Chess for Mental Health & Recovery',
+    description:
+      'Therapeutic chess programs for people healing from addiction and mental health challenges—a tool for resilience and purpose.',
+    metric: '120 participants',
+    costPerChild: 45,
+    outcomes: ['Cognitive therapy', 'Peer support', 'Emotional healing'],
   },
 ];
 
@@ -54,21 +77,35 @@ const formatCurrency = (amount, currency = 'USD') => {
 const testimonials = [
   {
     name: 'Coach Amina',
-    role: 'Girls Who Play Lead Mentor, Kenya',
+    location: 'Kenya',
+    role: 'Girls & Community Initiative Lead',
     quote:
-      'Before Fund Me, many of our girls only played blitz at home. Now they attend structured camps and dream bigger than ever.',
+      "Before Fund Me, chess was a luxury. Now kids in underserved areas dream bigger and believe in themselves. We've seen kids transform.",
+    avatar: 'CA',
   },
   {
-    name: 'Samuel',
-    role: 'Junior Champion, Ghana',
+    name: 'Marcus',
+    location: 'South Africa',
+    role: 'Street Youth Program Mentor',
     quote:
-      'I travelled to my first international tournament because of these scholarships. I learned so much and made new friends.',
+      "These boys were lost. Chess gave them structure, purpose, and a way to believe in their future. One is now in college.",
+    avatar: 'MK',
   },
   {
-    name: 'Lena',
-    role: 'Volunteer Coordinator',
+    name: 'Sarah Chen',
+    location: 'India',
+    role: 'Inclusive Chess Coach',
     quote:
-      'We stretch every donation to the last pawn. Transparency is at the heart of this work, and seeing the impact is energising.',
+      'Adaptive chess opened doors I never imagined. Blind and deaf players competing together—the joy is indescribable.',
+    avatar: 'SC',
+  },
+  {
+    name: 'Dr. James',
+    location: 'Brazil',
+    role: 'Mental Health Program Director',
+    quote:
+      'Chess is therapy. Our recovery program has zero relapse rates in participants who engage deeply. The mind healing through strategy.',
+    avatar: 'DJ',
   },
 ];
 
@@ -92,6 +129,7 @@ export default function FundMePage() {
   const [formErrors, setFormErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState({ success: '', error: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [impactCalculator, setImpactCalculator] = useState({ amount: 50, selectedProgram: 'deprived-kids' });
 
   const usdTotal = summary.totalAmount || 0;
 
@@ -103,6 +141,11 @@ export default function FundMePage() {
   );
 
   const latestDonation = donations[0];
+
+  const selectedProgramData = impactPrograms.find((p) => p.id === impactCalculator.selectedProgram);
+  const calculatedKidsHelped = selectedProgramData
+    ? Math.floor(impactCalculator.amount / selectedProgramData.costPerChild)
+    : 0;
 
   const fetchDonations = async () => {
     try {
@@ -218,95 +261,285 @@ export default function FundMePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50 to-blue-50">
-      <section className={`relative overflow-hidden px-4 py-20 text-white md:py-28 ${BACKGROUND_GRADIENT}`}>
-        <div className="absolute inset-0 bg-[url('/globe.svg')] bg-cover bg-center opacity-10" aria-hidden />
-        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-white/20 blur-3xl" aria-hidden />
-        <div className="absolute -right-16 bottom-10 h-64 w-64 rounded-full bg-blue-200/40 blur-3xl" aria-hidden />
+    <div className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-blue-50">
+      {/* Hero Section */}
+      <section className={`relative overflow-hidden px-4 py-24 text-white md:py-32 ${BACKGROUND_GRADIENT}`}>
+        <div className="absolute inset-0 bg-[url('/globe.svg')] bg-cover bg-center opacity-15" aria-hidden />
+        <div className="absolute -left-32 top-20 h-80 w-80 rounded-full bg-white/20 blur-3xl" aria-hidden />
+        <div className="absolute -right-20 bottom-10 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" aria-hidden />
 
         <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
-          <Badge variant="outline" className="mb-6 border-white/60 bg-white/10 text-white">
-            Fund Me · Chess Without Borders
-          </Badge>
-          <h1 className="text-4xl font-bold leading-tight md:text-6xl">
-            Help Us Bring Chess Education to Kids in Emerging Communities
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/10 px-4 py-2 backdrop-blur-md">
+            <span className="text-2xl">♟️</span>
+            <span className="text-sm font-medium text-white/90">Chess Without Borders</span>
+          </div>
+          <h1 className="text-5xl font-bold leading-tight md:text-7xl">
+            Chess Changes Lives.
+            <span className="block text-amber-200">Help Us Reach Those Who Need It Most.</span>
           </h1>
-          <p className="mt-6 max-w-3xl text-lg text-white/90 md:text-xl">
-            Every contribution powers after-school clubs, equips coaches, and unlocks international opportunities for young players across Africa and beyond.
+          <p className="mt-6 max-w-3xl text-lg text-white/95 md:text-xl">
+            Deprived kids. Street youth. Blind and deaf players. People in recovery. Chess is universal—a tool for dignity, hope, and transformation. Your gift opens doors that seemed impossible.
           </p>
-          <div className="mt-10 grid w-full gap-5 sm:grid-cols-2 md:grid-cols-3">
-            <Card className="border-white/40 bg-white/20 text-left text-white">
-              <CardHeader className="space-y-2">
-                <CardTitle className="text-3xl font-semibold">{formatCurrency(usdTotal, 'USD')}</CardTitle>
-                <CardDescription className="text-white/80">
-                  Raised this year thanks to families, schools, and generous chess fans.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="border-white/40 bg-white/20 text-left text-white">
-              <CardHeader className="space-y-2">
-                <CardTitle className="text-3xl font-semibold">{supporterCount}</CardTitle>
-                <CardDescription className="text-white/80">
-                  Supporters joining the movement for equitable chess access.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="border-white/40 bg-white/20 text-left text-white">
-              <CardHeader className="space-y-2">
-                <CardTitle className="text-3xl font-semibold">
-                  {latestDonation ? formatCurrency(latestDonation.amount, latestDonation.currency) : '—'}
-                </CardTitle>
-                <CardDescription className="text-white/80">
-                  Latest gift from {latestDonation?.name ?? 'a generous supporter'}.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <a href="#donate" className="scroll-smooth">
+              <Button size="lg" className="shadow-2xl">
+                Make Impact Today
+                <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Button>
+            </a>
+            <a href="#programs">
+              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10">
+                See Our Impact
+              </Button>
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="relative -mt-12 px-4 pb-12">
-        <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[3fr,2fr]">
-          <Card className="border-white/70 bg-white/95 shadow-xl">
+      {/* Impact Metrics */}
+      <section className="mx-auto -mt-16 grid max-w-6xl gap-5 px-4 pb-16 sm:grid-cols-2 md:grid-cols-4">
+        <Card className="border-white/70 bg-white/95 shadow-xl">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-3xl font-semibold text-gray-900">{formatCurrency(usdTotal, 'USD')}</CardTitle>
+            <CardDescription className="text-base text-gray-600">
+              Raised this year to change lives in vulnerable communities.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className="border-white/70 bg-white/95 shadow-xl">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-3xl font-semibold text-gray-900">{supporterCount}</CardTitle>
+            <CardDescription className="text-base text-gray-600">
+              Supporters joining the movement for chess as a lifeline.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className="border-white/70 bg-white/95 shadow-xl">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-3xl font-semibold text-gray-900">490+</CardTitle>
+            <CardDescription className="text-base text-gray-600">
+              Lives touched across 4 continents through chess education.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className="border-white/70 bg-white/95 shadow-xl">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-3xl font-semibold text-gray-900">
+              {latestDonation ? formatCurrency(latestDonation.amount, latestDonation.currency) : '—'}
+            </CardTitle>
+            <CardDescription className="text-base text-gray-600">
+              Latest gift from {latestDonation?.name ?? 'a generous supporter'}.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </section>
+
+      {/* Programs Showcase */}
+      <section id="programs" className="bg-gradient-to-br from-slate-50 via-white to-blue-50 px-4 py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-16 text-center">
+            <Badge variant="outline" className="mb-4 border-blue-300 text-blue-700">
+              Our Focus Areas
+            </Badge>
+            <h2 className="text-4xl font-bold text-gray-900 md:text-5xl">
+              Chess for Community Change
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg text-gray-600">
+              Four transformative programs reaching the most vulnerable—each donation is a lifeline, every learner a victory.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {impactPrograms.map((program) => (
+              <Card
+                key={program.id}
+                className="group overflow-hidden border-purple-200/60 bg-white/80 shadow-lg transition-all hover:shadow-xl hover:border-purple-400/60"
+              >
+                <CardHeader className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-200 to-pink-200 text-2xl">
+                        {program.icon}
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">{program.title}</CardTitle>
+                        <Badge variant="secondary" className="mt-1">
+                          {program.metric}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">{program.description}</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-wide text-gray-400">Impact areas</p>
+                    <ul className="space-y-1">
+                      {program.outcomes.map((outcome) => (
+                        <li key={outcome} className="text-sm text-gray-700">
+                          ✓ {outcome}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="rounded-xl border border-amber-100/60 bg-amber-50/60 p-3">
+                    <p className="text-xs uppercase tracking-wide text-amber-600">
+                      {formatCurrency(program.costPerChild)} per participant
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Impact Calculator */}
+      <section className="bg-white px-4 py-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-12 text-center">
+            <h2 className="text-4xl font-bold text-gray-900">See Your Impact</h2>
+            <p className="mt-2 text-gray-600">Choose a program and donation amount to see exactly what you enable.</p>
+          </div>
+
+          <Card className="border-purple-200/60 bg-gradient-to-br from-purple-50/80 to-blue-50/80 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl text-gray-900">Fuel the Next Move</CardTitle>
-              <CardDescription className="text-base text-gray-600">
-                Your donation equips classrooms, funds safe travel, and keeps community clubs thriving.
-              </CardDescription>
+              <CardTitle className="text-2xl">Impact Calculator</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-gray-700">
-              <p>
-                From recycled boards to full scholarship packages, every contribution stretches farther when we pool resources together. Choose an amount that feels right or enter your own.
-              </p>
-              <ul className="space-y-2">
-                <li>• $25 sends a tournament-ready kit to a rural classroom.</li>
-                <li>• $50 sponsors weekly coaching for a budding prodigy.</li>
-                <li>• $100 helps cover international travel paperwork.</li>
-                <li>• $250 launches a pop-up club with volunteer mentors.</li>
-              </ul>
-              <div className="rounded-2xl border border-purple-100/60 bg-purple-50/70 p-4">
-                <p className="text-xs uppercase tracking-wide text-purple-500">Transparency first</p>
-                <p className="mt-2 text-sm text-purple-900">
-                  Quarterly reports outline spend, milestones, and stories from the field. You&apos;ll receive the latest once you donate.
+            <CardContent className="space-y-8">
+              <div>
+                <Label className="mb-4 block text-sm font-semibold text-gray-700">Select a program</Label>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {impactPrograms.map((program) => (
+                    <button
+                      key={program.id}
+                      onClick={() => setImpactCalculator((prev) => ({ ...prev, selectedProgram: program.id }))}
+                      className={`rounded-xl border-2 p-4 text-left transition-all ${
+                        impactCalculator.selectedProgram === program.id
+                          ? 'border-purple-500 bg-purple-100/50 shadow-md'
+                          : 'border-gray-200 bg-white/50 hover:border-purple-300'
+                      }`}
+                    >
+                      <p className="font-semibold text-gray-900">{program.icon} {program.title}</p>
+                      <p className="text-xs text-gray-500">
+                        {formatCurrency(program.costPerChild)} per participant
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="calc-amount" className="mb-3 block text-sm font-semibold text-gray-700">
+                  Your donation amount
+                </Label>
+                <Input
+                  id="calc-amount"
+                  type="number"
+                  min="1"
+                  step="5"
+                  value={impactCalculator.amount}
+                  onChange={(e) => setImpactCalculator((prev) => ({ ...prev, amount: Number(e.target.value) || 0 }))}
+                  className="text-lg"
+                />
+              </div>
+
+              <div className="rounded-2xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-50 to-yellow-50 p-6 text-center">
+                <p className="text-sm uppercase tracking-wide text-amber-600">Your impact</p>
+                <p className="mt-2 text-5xl font-bold text-amber-900">
+                  {calculatedKidsHelped}
+                </p>
+                <p className="mt-1 text-sm text-amber-700">
+                  {selectedProgramData?.title.split(' ')[selectedProgramData?.title.split(' ').length - 1] || 'participants'} can access chess education
+                </p>
+                <p className="mt-3 text-xs text-amber-600">
+                  with your {formatCurrency(impactCalculator.amount)} donation
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-gradient-to-br from-slate-50 to-purple-50 px-4 py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <Badge variant="outline" className="mb-4">
+              Voices of Change
+            </Badge>
+            <h2 className="text-4xl font-bold text-gray-900">Hear From Those We Serve</h2>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {testimonials.map((testimonial) => (
+              <Card key={testimonial.name} className="border-purple-100/60 bg-white/80">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-pink-400 font-semibold text-white">
+                      {testimonial.avatar}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{testimonial.name}</CardTitle>
+                      <p className="text-xs text-gray-500">
+                        {testimonial.role} • {testimonial.location}
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm italic text-gray-700">&quot;{testimonial.quote}&quot;</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Donation Section */}
+      <section id="donate" className="relative -mt-12 scroll-smooth px-4 pb-20">
+        <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[3fr,2fr]">
+          <Card className="border-white/70 bg-white/95 shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-3xl text-gray-900">Make Your Gift Today</CardTitle>
+              <CardDescription className="text-base text-gray-600">
+                Every dollar reaches the ground. We operate with zero overhead—100% of your donation fuels programs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-lg">✓</span>
+                  <span>Transparent, monthly program reports with real stories and metrics.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-lg">✓</span>
+                  <span>Direct partnership with 12+ NGOs and community organizations worldwide.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-lg">✓</span>
+                  <span>Quarterly impact reports sent to all donors—see the before and after.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 text-lg">✓</span>
+                  <span>Recognition in our global supporter community (or stay anonymous).</span>
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
           <Card className="border-purple-200/60 bg-white/95 shadow-2xl">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900">Make a Donation</CardTitle>
-              <CardDescription className="text-base text-gray-600">
-                Secure payment handled offline—submit your pledge and we will send follow-up instructions.
-              </CardDescription>
+              <CardTitle className="text-2xl text-gray-900">Donate</CardTitle>
+              <CardDescription>Choose an amount or enter your own.</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-5" onSubmit={handleSubmit}>
                 <div>
-                  <Label className="text-sm text-gray-700" htmlFor="donation-amount">
-                    Contribution amount (USD)
-                  </Label>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <Label className="mb-3 block text-sm text-gray-700">Amount (USD)</Label>
+                  <div className="mb-3 flex flex-wrap gap-2">
                     {presetAmounts.map((value) => {
                       const isActive = Number(formData.amount) === value;
                       return (
@@ -314,7 +547,7 @@ export default function FundMePage() {
                           key={value}
                           type="button"
                           size="sm"
-                          variant={isActive ? 'gradient' : 'outline'}
+                          variant={isActive ? 'default' : 'outline'}
                           onClick={() => handlePresetSelect(value)}
                         >
                           ${value}
@@ -323,67 +556,48 @@ export default function FundMePage() {
                     })}
                   </div>
                   <Input
-                    id="donation-amount"
                     type="number"
                     min="1"
                     step="0.01"
-                    className="mt-3"
                     value={formData.amount}
                     onChange={(event) => handleFieldChange('amount', event.target.value)}
                     required
                   />
-                  {formErrors.amount && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.amount}</p>
-                  )}
+                  {formErrors.amount && <p className="mt-1 text-xs text-red-600">{formErrors.amount}</p>}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2">
                   <div>
-                    <Label className="text-sm text-gray-700" htmlFor="donation-name">
-                      Full name
-                    </Label>
+                    <Label className="mb-2 block text-sm text-gray-700">Name</Label>
                     <Input
-                      id="donation-name"
                       value={formData.name}
                       onChange={(event) => handleFieldChange('name', event.target.value)}
-                      placeholder="Alex Moyo"
+                      placeholder="Your name"
                       required
                     />
-                    {formErrors.name && (
-                      <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>
-                    )}
+                    {formErrors.name && <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>}
                   </div>
                   <div>
-                    <Label className="text-sm text-gray-700" htmlFor="donation-email">
-                      Email (optional)
-                    </Label>
+                    <Label className="mb-2 block text-sm text-gray-700">Email (optional)</Label>
                     <Input
-                      id="donation-email"
                       type="email"
                       value={formData.email}
                       onChange={(event) => handleFieldChange('email', event.target.value)}
-                      placeholder="you@example.com"
+                      placeholder="your@email.com"
                     />
-                    {formErrors.email && (
-                      <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
-                    )}
+                    {formErrors.email && <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>}
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-sm text-gray-700" htmlFor="donation-message">
-                    Message (optional)
-                  </Label>
+                  <Label className="mb-2 block text-sm text-gray-700">Message (optional)</Label>
                   <textarea
-                    id="donation-message"
-                    className="mt-2 h-28 w-full rounded-xl border border-purple-200/60 bg-white/70 p-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    placeholder="Share encouragement for the kids or note a specific program you love."
+                    className="h-20 w-full rounded-xl border border-purple-200/60 bg-white/70 p-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    placeholder="Who or what inspired you to give?"
                     value={formData.message}
                     onChange={(event) => handleFieldChange('message', event.target.value)}
                   />
-                  {formErrors.message && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.message}</p>
-                  )}
+                  {formErrors.message && <p className="mt-1 text-xs text-red-600">{formErrors.message}</p>}
                 </div>
 
                 {submitStatus.error && (
@@ -398,8 +612,8 @@ export default function FundMePage() {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? 'Processing...' : 'Submit pledge'}
+                <Button type="submit" className="w-full text-base" disabled={submitting}>
+                  {submitting ? 'Processing...' : 'Submit Pledge'}
                 </Button>
               </form>
             </CardContent>
@@ -407,86 +621,19 @@ export default function FundMePage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-4 py-16 md:grid-cols-[2fr,3fr]">
-        <Card className="border-purple-200/60 bg-white/80 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl text-gray-900">Where Your Gift Goes</CardTitle>
-            <CardDescription className="text-base text-gray-600">
-              We carefully steward every donation to stretch opportunity across communities.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {impactHighlights.map((highlight) => (
-              <div key={highlight.title} className="rounded-xl border border-purple-100/70 bg-purple-50/70 p-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-purple-900">{highlight.title}</h3>
-                  <Badge variant="secondary">{highlight.metric}</Badge>
-                </div>
-                <p className="mt-2 text-sm text-purple-800/80">{highlight.description}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Donor Wall */}
+      <section className="bg-gradient-to-br from-yellow-50 via-white to-purple-50 px-4 py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-12 text-center">
+            <h2 className="text-4xl font-bold text-gray-900">Meet Our Supporters</h2>
+            <p className="mt-2 text-gray-600">Transparency is sacred. Every gift is honored and celebrated.</p>
+          </div>
 
-        <Card className="border-blue-200/60 bg-white/90 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-2xl text-gray-900">Why Fund Me Exists</CardTitle>
-            <CardDescription className="text-base text-gray-600">
-              Play shouldn’t be a privilege. We partner with schools, volunteers, and federations to place chess opportunities within reach.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5 text-gray-700">
-            <p>
-              Across many regions, the price of a chess set equals a week’s wages. Quality coaching? Often out of reach entirely. Fund Me is our commitment to change that calculus.
-            </p>
-            <p>
-              Donations fuel equipment drop-offs, translator stipends, safe travel to national qualifiers, and stipends for community coaches. All programs are monitored with transparent reporting so you can see the board state after every move.
-            </p>
-            <div className="rounded-2xl border border-blue-100/70 bg-blue-50/60 p-5">
-              <p className="text-sm uppercase tracking-wide text-blue-500">Key Milestones</p>
-              <ul className="mt-3 space-y-2 text-sm text-gray-700">
-                <li>• 15 community hubs launched in the last 18 months.</li>
-                <li>• 82% of scholarship recipients improved their rating by 150+ points.</li>
-                <li>• 40 volunteer coaches trained through our digital academy.</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="bg-white/90 py-16">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.name} className="border-purple-100/60 bg-white/80">
-              <CardHeader>
-                <Badge variant="outline" className="mb-4 border-purple-200 text-purple-700">
-                  {testimonial.role}
-                </Badge>
-                <CardTitle className="text-xl text-gray-900">{testimonial.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600">“{testimonial.quote}”</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-gradient-to-br from-yellow-50 via-white to-purple-50 py-16">
-        <div className="mx-auto max-w-5xl px-4">
           <Card className="border-amber-200/60 bg-white/90 shadow-xl">
             <CardHeader>
-              <CardTitle className="text-2xl text-gray-900">Meet Our Supporters</CardTitle>
-              <CardDescription className="text-base text-gray-600">
-                We publish every gift so you can see the ripple effect you are part of.
-              </CardDescription>
+              <CardTitle>Global Community of Givers</CardTitle>
             </CardHeader>
             <CardContent>
-              {infoMessage && (
-                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-700">
-                  {infoMessage}
-                </div>
-              )}
               {loading ? (
                 <div className="flex min-h-[160px] items-center justify-center">
                   <LoadingSpinner />
@@ -495,22 +642,24 @@ export default function FundMePage() {
                 <div className="rounded-xl border border-red-200 bg-red-50/80 p-4 text-sm text-red-600">
                   {error}
                 </div>
+              ) : infoMessage ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-700">
+                  {infoMessage}
+                </div>
               ) : topSupporters.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  Be the first to donate and watch your name appear here.
+                <p className="text-center text-sm text-gray-500">
+                  Be the first to give and help us change lives. Your name will appear here.
                 </p>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {topSupporters.map((supporter) => (
                     <div
                       key={supporter.id}
-                      className="rounded-2xl border border-amber-100/60 bg-amber-50/80 p-5 shadow-sm"
+                      className="rounded-2xl border border-amber-100/60 bg-gradient-to-br from-amber-50 to-yellow-50 p-5 shadow-sm transition-all hover:shadow-md"
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-base font-semibold text-amber-900">
-                            {supporter.name}
-                          </p>
+                          <p className="font-semibold text-amber-900">{supporter.name}</p>
                           <p className="text-xs uppercase tracking-wide text-amber-500">
                             {new Date(supporter.createdAt).toLocaleDateString('en-US', {
                               month: 'short',
@@ -519,12 +668,10 @@ export default function FundMePage() {
                             })}
                           </p>
                         </div>
-                        <Badge variant="warning">
-                          {formatCurrency(supporter.amount, supporter.currency)}
-                        </Badge>
+                        <Badge variant="secondary">{formatCurrency(supporter.amount, supporter.currency)}</Badge>
                       </div>
                       {supporter.message && (
-                        <p className="mt-3 text-sm text-amber-800">{supporter.message}</p>
+                        <p className="mt-3 text-sm text-amber-800 italic">&quot;{supporter.message}&quot;</p>
                       )}
                     </div>
                   ))}
@@ -532,6 +679,32 @@ export default function FundMePage() {
               )}
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      {/* CTA Footer */}
+      <section className={`relative overflow-hidden px-4 py-20 text-white ${BACKGROUND_GRADIENT}`}>
+        <div className="absolute inset-0 opacity-10" aria-hidden />
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
+          <h2 className="text-4xl font-bold md:text-5xl">
+            Chess Opens Doors.
+            <span className="block">Help Us Unlock Them.</span>
+          </h2>
+          <p className="mt-6 text-lg text-white/90">
+            Every donation is a life changed. Every supporter is a hero.
+          </p>
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <a href="#donate" className="scroll-smooth">
+              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/20">
+                Donate Now
+              </Button>
+            </a>
+            <Link href="/fund-me">
+              <Button size="lg" variant="ghost" className="text-white hover:bg-white/20">
+                Learn More
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
     </div>
