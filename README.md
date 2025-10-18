@@ -77,8 +77,8 @@ A comprehensive web application for chess training and tournaments, connecting s
 
 4. **Set up the database**
    ```bash
-   npx prisma generate
-   npx prisma db push
+npx prisma generate
+npx prisma db push
    ```
 
 5. **Run the development server**
