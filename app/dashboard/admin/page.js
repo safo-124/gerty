@@ -101,6 +101,8 @@ export default function AdminDashboard() {
     images: [], // { url, width?, height? }
     localFiles: [], // File objects before upload
   });
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [editProductForm, setEditProductForm] = useState({ name: '', description: '', price: '', stock: '' });
 
   const [createTournamentForm, setCreateTournamentForm] = useState({
     name: '',
@@ -284,6 +286,60 @@ export default function AdminDashboard() {
       setCreateProductError(err.message || 'Failed to create product');
     } finally {
       setCreateProductLoading(false);
+    }
+  };
+
+  const toggleProductActive = async (product) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/store/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ active: !product.active }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update status');
+      await fetchStoreProducts();
+    } catch (e) {
+      setError(e.message || 'Failed to update status');
+    }
+  };
+
+  const startEditProduct = (p) => {
+    setEditingProductId(p.id);
+    setEditProductForm({
+      name: p.name || '',
+      description: p.description || '',
+      price: String(p.price ?? ''),
+      stock: String(p.stock ?? ''),
+    });
+  };
+
+  const cancelEditProduct = () => {
+    setEditingProductId(null);
+    setEditProductForm({ name: '', description: '', price: '', stock: '' });
+  };
+
+  const saveEditProduct = async () => {
+    if (!token || !editingProductId) return;
+    try {
+      const payload = {
+        name: editProductForm.name.trim() || undefined,
+        description: editProductForm.description.trim() || undefined,
+        price: editProductForm.price !== '' ? Number(editProductForm.price) : undefined,
+        stock: editProductForm.stock !== '' ? Number(editProductForm.stock) : undefined,
+      };
+      const res = await fetch(`/api/admin/store/products/${editingProductId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update product');
+      cancelEditProduct();
+      await fetchStoreProducts();
+    } catch (e) {
+      setError(e.message || 'Failed to update product');
     }
   };
 
@@ -1075,12 +1131,48 @@ export default function AdminDashboard() {
                           )}
                           <div>
                             <p className="font-medium">{p.name}</p>
-                            <p className="text-xs text-gray-500">${'{'}p.price.toFixed(2){'}'} • Stock: {p.stock}</p>
+                            <p className="text-xs text-gray-500">${'{'}p.price.toFixed(2){'}'} • Stock: {p.stock} • {p.active ? 'Active' : 'Inactive'}</p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant={p.active ? 'outline' : 'secondary'} onClick={() => toggleProductActive(p)}>
+                            {p.active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          {editingProductId === p.id ? (
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="secondary" onClick={saveEditProduct}>Save</Button>
+                              <Button size="sm" variant="outline" onClick={cancelEditProduct}>Cancel</Button>
+                            </div>
+                          ) : (
+                            <Button size="sm" onClick={() => startEditProduct(p)}>Edit</Button>
+                          )}
+                        </div>
                       </div>
                     ))}
+
+                    {editingProductId && (
+                      <div className="mt-3 space-y-2 rounded-lg border p-3">
+                        <p className="text-sm font-medium">Edit Product</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="ename">Name</Label>
+                            <Input id="ename" value={editProductForm.name} onChange={(e) => setEditProductForm((s) => ({ ...s, name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label htmlFor="eprice">Price</Label>
+                            <Input id="eprice" type="number" step="0.01" value={editProductForm.price} onChange={(e) => setEditProductForm((s) => ({ ...s, price: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label htmlFor="estock">Stock</Label>
+                            <Input id="estock" type="number" step="1" value={editProductForm.stock} onChange={(e) => setEditProductForm((s) => ({ ...s, stock: e.target.value }))} />
+                          </div>
+                          <div className="col-span-2">
+                            <Label htmlFor="edesc">Description</Label>
+                            <Input id="edesc" value={editProductForm.description} onChange={(e) => setEditProductForm((s) => ({ ...s, description: e.target.value }))} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
