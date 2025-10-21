@@ -235,6 +235,30 @@ Quickly get an admin user and verify dashboard stats.
 
 If no lessons exist yet, Students Present Today may be 0 — create lessons for today to see this number rise.
 
+## 🛒 Store (Chess Items & Materials)
+
+This project includes a simple store where visitors can browse products, add them to a cart, and place an order (email and line items; no payment integration by default).
+
+- Public page: `/store`
+- List products: `GET /api/store/products`
+- Place order: `POST /api/store/orders` with `{ email, items: [{ productId, quantity }] }`
+- Admin endpoints:
+   - Upload image to Blob: `POST /api/admin/store/upload` (multipart/form-data: `file`)
+   - Create product: `POST /api/admin/store/products` with `{ name, description?, price, stock, images: [{ url }] }`
+- Admin UI: Dashboard → Store tab to add products and see list
+
+### Blob Storage Setup (Vercel Blob)
+
+Image uploads use Vercel Blob via a server route. Configure the read-write token in `.env`:
+
+```env
+BLOB_READ_WRITE_TOKEN=your_vercel_blob_rw_token
+```
+
+Notes:
+- The admin upload route streams files to `https://blob.vercel-storage.com/<generated-key>` with the token.
+- In production, restrict tokens appropriately and rotate them when necessary.
+
 ## 🎨 Design Features
 
 - Gradient backgrounds and subtle animations

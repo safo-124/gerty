@@ -45,6 +45,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
@@ -68,6 +74,9 @@ model User {
   trainingRequestsAsTrainer TrainingRequest[] @relation("TrainerTrainingRequests")
   notificationPreference NotificationPreference?
   donations Donation[]
+
+  // Store relations
+  orders   Order[]
 }
 
 model TrainerProfile {
@@ -232,6 +241,61 @@ model Donation {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  name        String
+  description String?        @db.Text
+  price       Float
+  currency    String         @default("USD")
+  stock       Int            @default(0)
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  images      ProductImage[]
+  orderItems  OrderItem[]
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String
+  total     Float       @default(0)
+  currency  String      @default("USD")
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity   Int
+  unitPrice  Float
+  currency   String   @default("USD")
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model NotificationPreference {

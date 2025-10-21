@@ -41,6 +41,9 @@ export default function Navbar() {
             <Link href="/fund-me" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Fund Me
             </Link>
+            <Link href="/store" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              Store
+            </Link>
             
             {user ? (
               <>
@@ -98,6 +101,9 @@ export default function Navbar() {
             </Link>
             <Link href="/fund-me" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">
               Fund Me
+            </Link>
+            <Link href="/store" className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">
+              Store
             </Link>
             
             {user ? (
