@@ -22,6 +22,7 @@ const TABS = [
   { id: 'students', label: 'Students' },
   { id: 'funds', label: 'Fund Me' },
   { id: 'tournaments', label: 'Tournaments' },
+  { id: 'store', label: 'Store' },
 ];
 
 const formatDate = (value) => {
@@ -86,6 +87,20 @@ export default function AdminDashboard() {
   const [createTournamentError, setCreateTournamentError] = useState('');
   const [stats, setStats] = useState({ trainerCount: 0, studentsPresentToday: 0 });
   const redirectRef = useRef(false);
+
+  // Store state
+  const [storeProducts, setStoreProducts] = useState([]);
+  const [storeLoading, setStoreLoading] = useState(false);
+  const [createProductLoading, setCreateProductLoading] = useState(false);
+  const [createProductError, setCreateProductError] = useState('');
+  const [createProductForm, setCreateProductForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stock: '',
+    images: [], // { url, width?, height? }
+    localFiles: [], // File objects before upload
+  });
 
   const [createTournamentForm, setCreateTournamentForm] = useState({
     name: '',
@@ -185,6 +200,91 @@ export default function AdminDashboard() {
     setRefreshing(true);
     await fetchAllData({ silent: true });
     setRefreshing(false);
+  };
+
+  const fetchStoreProducts = useCallback(async () => {
+    setStoreLoading(true);
+    try {
+      const res = await fetch('/api/store/products');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load products');
+      setStoreProducts(data.products || []);
+    } catch (e) {
+      setError(e.message || 'Failed to load products');
+    } finally {
+      setStoreLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'store') {
+      fetchStoreProducts();
+    }
+  }, [activeTab, fetchStoreProducts]);
+
+  const handleProductFieldChange = (field, value) => {
+    setCreateProductForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleProductFilesChange = (files) => {
+    const arr = Array.from(files || []);
+    setCreateProductForm((prev) => ({ ...prev, localFiles: arr }));
+  };
+
+  const handleUploadFiles = async () => {
+    if (!token || createProductForm.localFiles.length === 0) return [];
+    const uploaded = [];
+    for (const f of createProductForm.localFiles) {
+      const form = new FormData();
+      form.append('file', f);
+      form.append('filename', f.name);
+      const res = await fetch('/api/admin/store/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      uploaded.push({ url: data.url });
+    }
+    return uploaded;
+  };
+
+  const handleCreateProduct = async (e) => {
+    e.preventDefault();
+    if (!token) return;
+    setCreateProductError('');
+    setCreateProductLoading(true);
+    try {
+      const images = await handleUploadFiles();
+      const payload = {
+        name: createProductForm.name.trim(),
+        description: createProductForm.description.trim() || undefined,
+        price: Number(createProductForm.price),
+        stock: Number(createProductForm.stock || 0),
+        images,
+      };
+      if (!payload.name || !payload.price) throw new Error('Name and price are required');
+
+      const res = await fetch('/api/admin/store/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to create product');
+
+      setCreateProductForm({ name: '', description: '', price: '', stock: '', images: [], localFiles: [] });
+      await fetchStoreProducts();
+    } catch (err) {
+      console.error('Create product error:', err);
+      setCreateProductError(err.message || 'Failed to create product');
+    } finally {
+      setCreateProductLoading(false);
+    }
   };
 
   const handleApproveTrainer = async (trainerId) => {
@@ -915,6 +1015,75 @@ export default function AdminDashboard() {
                   </form>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {activeTab === 'store' && (
+            <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Add Product</CardTitle>
+                    <CardDescription>Upload images to Blob and create a new item</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {createProductError && (
+                      <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">{createProductError}</div>
+                    )}
+                    <form onSubmit={handleCreateProduct} className="space-y-3">
+                      <div>
+                        <Label htmlFor="pname">Name</Label>
+                        <Input id="pname" value={createProductForm.name} onChange={(e) => handleProductFieldChange('name', e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="pdesc">Description</Label>
+                        <Input id="pdesc" value={createProductForm.description} onChange={(e) => handleProductFieldChange('description', e.target.value)} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="pprice">Price (USD)</Label>
+                          <Input id="pprice" type="number" min="0" step="0.01" value={createProductForm.price} onChange={(e) => handleProductFieldChange('price', e.target.value)} />
+                        </div>
+                        <div>
+                          <Label htmlFor="pstock">Stock</Label>
+                          <Input id="pstock" type="number" min="0" step="1" value={createProductForm.stock} onChange={(e) => handleProductFieldChange('stock', e.target.value)} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="pfiles">Images</Label>
+                        <Input id="pfiles" type="file" accept="image/*" multiple onChange={(e) => handleProductFilesChange(e.target.files)} />
+                      </div>
+                      <Button type="submit" disabled={createProductLoading}>{createProductLoading ? 'Creating...' : 'Create Product'}</Button>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Products</CardTitle>
+                    <CardDescription>Current items in the store</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {storeLoading && <p className="text-sm text-gray-500">Loading...</p>}
+                    {!storeLoading && storeProducts.length === 0 && <p className="text-sm text-gray-500">No products yet.</p>}
+                    {storeProducts.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="flex items-center gap-3">
+                          {p.images?.[0]?.url && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.images[0].url} alt={p.name} className="h-12 w-12 rounded object-cover" />
+                          )}
+                          <div>
+                            <p className="font-medium">{p.name}</p>
+                            <p className="text-xs text-gray-500">${'{'}p.price.toFixed(2){'}'} • Stock: {p.stock}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
         </div>
