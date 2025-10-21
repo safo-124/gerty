@@ -84,6 +84,7 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [createTournamentLoading, setCreateTournamentLoading] = useState(false);
   const [createTournamentError, setCreateTournamentError] = useState('');
+  const [stats, setStats] = useState({ trainerCount: 0, studentsPresentToday: 0 });
   const redirectRef = useRef(false);
 
   const [createTournamentForm, setCreateTournamentForm] = useState({
@@ -131,11 +132,12 @@ export default function AdminDashboard() {
           Authorization: `Bearer ${token}`,
         };
 
-        const [trainersRes, studentsRes, fundsRes, tournamentsRes] = await Promise.all([
+        const [trainersRes, studentsRes, fundsRes, tournamentsRes, statsRes] = await Promise.all([
           fetch('/api/admin/trainers', { headers }),
           fetch('/api/admin/students', { headers }),
           fetch('/api/admin/funds', { headers }),
           fetch('/api/admin/tournaments', { headers }),
+          fetch('/api/admin/stats', { headers }),
         ]);
 
         const parseOrThrow = async (response, fallbackMessage) => {
@@ -149,13 +151,18 @@ export default function AdminDashboard() {
         const trainersData = await parseOrThrow(trainersRes, 'Failed to load trainers');
         const studentsData = await parseOrThrow(studentsRes, 'Failed to load students');
         const fundsData = await parseOrThrow(fundsRes, 'Failed to load donation data');
-        const tournamentsData = await parseOrThrow(tournamentsRes, 'Failed to load tournaments');
+  const tournamentsData = await parseOrThrow(tournamentsRes, 'Failed to load tournaments');
+  const statsData = await parseOrThrow(statsRes, 'Failed to load stats');
 
         setTrainers(trainersData.trainers || []);
         setStudents(studentsData.students || []);
         setDonations(fundsData.donations || []);
         setDonationTotals(fundsData.totals || []);
         setTournaments(tournamentsData.tournaments || []);
+        setStats({
+          trainerCount: Number(statsData.trainerCount || 0),
+          studentsPresentToday: Number(statsData.studentsPresentToday || 0),
+        });
       } catch (err) {
         console.error('Admin dashboard data load error:', err);
         setError(err.message || 'Failed to load admin data');
@@ -393,7 +400,7 @@ export default function AdminDashboard() {
                     <CardDescription>Across all specialties</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-semibold text-gray-900">{trainers.length}</div>
+                    <div className="text-3xl font-semibold text-gray-900">{stats.trainerCount}</div>
                     <p className="mt-2 text-sm text-gray-500">
                       {pendingTrainerCount} waiting approval • {approvedTrainerCount} live
                     </p>
@@ -402,12 +409,12 @@ export default function AdminDashboard() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Students Enrolled</CardTitle>
-                    <CardDescription>Active learners on the platform</CardDescription>
+                    <CardTitle>Students Present Today</CardTitle>
+                    <CardDescription>Distinct students with lessons today</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-semibold text-gray-900">{students.length}</div>
-                    <p className="mt-2 text-sm text-gray-500">Monitoring goals and progress</p>
+                    <div className="text-3xl font-semibold text-gray-900">{stats.studentsPresentToday}</div>
+                    <p className="mt-2 text-sm text-gray-500">Based on scheduled/completed lessons</p>
                   </CardContent>
                 </Card>
 

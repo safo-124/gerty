@@ -25,8 +25,15 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      router.push('/');
+      const result = await login(formData.email, formData.password);
+      // If the auth context returns user, prefer role-based redirect via /dashboard
+      if (result?.user?.role === 'ADMIN') {
+        router.push('/dashboard/admin');
+      } else if (result?.user?.role === 'TRAINER') {
+        router.push('/dashboard/trainer');
+      } else {
+        router.push('/dashboard/student');
+      }
     } catch (err) {
       setError(err.message || 'Failed to login. Please check your credentials.');
     } finally {
