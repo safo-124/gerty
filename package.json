@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "reminders": "node scripts/send-reminders.mjs",
+    "seed:admin": "node scripts/seed-admin.mjs",
+    "dev:node": "node node_modules/next/dist/bin/next dev --turbopack",
+    "smoke:admin-stats": "node scripts/smoke-admin-stats.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
