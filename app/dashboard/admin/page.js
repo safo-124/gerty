@@ -97,6 +97,12 @@ export default function AdminDashboard() {
   const redirectRef = useRef(false);
   // per-tournament create game forms: { [tournamentId]: { whiteUserId: '', blackUserId: '', creating?: boolean, error?: string, lastGameId?: string } }
   const [createGameForms, setCreateGameForms] = useState({});
+  const [editingTournamentId, setEditingTournamentId] = useState(null);
+  const [editTournamentForm, setEditTournamentForm] = useState({
+    name: '', description: '', startDate: '', endDate: '', registrationEnd: '',
+    maxParticipants: '', entryFee: '', registrationFree: false, prizePool: '',
+    format: 'Swiss', timeControl: 'Rapid', mode: 'IN_PERSON', status: 'UPCOMING', image: '', rules: '',
+  });
 
   // Store state
   const [storeProducts, setStoreProducts] = useState([]);
@@ -582,6 +588,86 @@ export default function AdminDashboard() {
       setCreateTournamentError(err.message || 'Failed to create tournament');
     } finally {
       setCreateTournamentLoading(false);
+    }
+  };
+
+  const startEditTournament = (t) => {
+    setEditingTournamentId(t.id);
+    setEditTournamentForm({
+      name: t.name || '',
+      description: t.description || '',
+      startDate: t.startDate ? new Date(t.startDate).toISOString().slice(0,16) : '',
+      endDate: t.endDate ? new Date(t.endDate).toISOString().slice(0,16) : '',
+      registrationEnd: t.registrationEnd ? new Date(t.registrationEnd).toISOString().slice(0,16) : '',
+      maxParticipants: t.maxParticipants != null ? String(t.maxParticipants) : '',
+      entryFee: t.entryFee != null ? String(t.entryFee) : '',
+      registrationFree: !!t.registrationFree,
+      prizePool: t.prizePool != null ? String(t.prizePool) : '',
+      format: t.format || 'Swiss',
+      timeControl: t.timeControl || 'Rapid',
+      mode: t.mode || 'IN_PERSON',
+      status: t.status || 'UPCOMING',
+      image: t.image || '',
+      rules: t.rules || '',
+    });
+  };
+
+  const cancelEditTournament = () => {
+    setEditingTournamentId(null);
+    setEditTournamentForm({
+      name: '', description: '', startDate: '', endDate: '', registrationEnd: '',
+      maxParticipants: '', entryFee: '', registrationFree: false, prizePool: '',
+      format: 'Swiss', timeControl: 'Rapid', mode: 'IN_PERSON', status: 'UPCOMING', image: '', rules: '',
+    });
+  };
+
+  const saveEditTournament = async () => {
+    if (!token || !editingTournamentId) return;
+    try {
+      const payload = {
+        name: editTournamentForm.name.trim() || undefined,
+        description: editTournamentForm.description.trim() || undefined,
+        startDate: editTournamentForm.startDate ? new Date(editTournamentForm.startDate).toISOString() : undefined,
+        endDate: editTournamentForm.endDate ? new Date(editTournamentForm.endDate).toISOString() : undefined,
+        registrationEnd: editTournamentForm.registrationEnd ? new Date(editTournamentForm.registrationEnd).toISOString() : undefined,
+        maxParticipants: editTournamentForm.maxParticipants !== '' ? Number(editTournamentForm.maxParticipants) : undefined,
+        prizePool: editTournamentForm.prizePool !== '' ? Number(editTournamentForm.prizePool) : undefined,
+        entryFee: editTournamentForm.registrationFree ? 0 : (editTournamentForm.entryFee !== '' ? Number(editTournamentForm.entryFee) : undefined),
+        registrationFree: !!editTournamentForm.registrationFree,
+        format: editTournamentForm.format || undefined,
+        timeControl: editTournamentForm.timeControl || undefined,
+        mode: editTournamentForm.mode || undefined,
+        image: editTournamentForm.image || undefined,
+        rules: editTournamentForm.rules || undefined,
+        status: editTournamentForm.status || undefined,
+      };
+      const res = await fetch(`/api/admin/tournaments/${editingTournamentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update tournament');
+      cancelEditTournament();
+      await fetchAllData({ silent: true });
+    } catch (e) {
+      setError(e.message || 'Failed to update tournament');
+    }
+  };
+
+  const handleDeleteTournament = async (t) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/tournaments/${t.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete tournament');
+      if (editingTournamentId === t.id) cancelEditTournament();
+      await fetchAllData({ silent: true });
+    } catch (e) {
+      setError(e.message || 'Failed to delete tournament');
     }
   };
 
@@ -1304,7 +1390,101 @@ export default function AdminDashboard() {
                           <p className="text-xs uppercase tracking-wide text-gray-400">Registration</p>
                           <p className="text-sm text-gray-700">{tournament.registrationFree ? 'Free' : (tournament.entryFee ? formatCurrency(tournament.entryFee, 'USD') : 'Free')}</p>
                         </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-400">Registration</p>
+                          <p className="text-sm text-gray-700">{tournament.registrationFree ? 'Free' : (tournament.entryFee ? formatCurrency(tournament.entryFee, 'USD') : 'Free')}</p>
+                        </div>
                       </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {editingTournamentId === tournament.id ? (
+                          <>
+                            <Button size="sm" variant="secondary" onClick={saveEditTournament}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={cancelEditTournament}>Cancel</Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button size="sm" onClick={() => startEditTournament(tournament)}>Edit</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteTournament(tournament)}>Delete</Button>
+                          </>
+                        )}
+                      </div>
+
+                      {editingTournamentId === tournament.id && (
+                        <div className="mt-4 space-y-3 rounded-xl border p-4">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <Label htmlFor={`etname-${tournament.id}`}>Name</Label>
+                              <Input id={`etname-${tournament.id}`} value={editTournamentForm.name} onChange={(e) => setEditTournamentForm((s) => ({ ...s, name: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`etstatus-${tournament.id}`}>Status</Label>
+                              <select id={`etstatus-${tournament.id}`} className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" value={editTournamentForm.status} onChange={(e) => setEditTournamentForm((s) => ({ ...s, status: e.target.value }))}>
+                                <option value="UPCOMING">UPCOMING</option>
+                                <option value="ONGOING">ONGOING</option>
+                                <option value="COMPLETED">COMPLETED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                              </select>
+                            </div>
+                            <div>
+                              <Label htmlFor={`etstart-${tournament.id}`}>Start</Label>
+                              <Input id={`etstart-${tournament.id}`} type="datetime-local" value={editTournamentForm.startDate} onChange={(e) => setEditTournamentForm((s) => ({ ...s, startDate: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`etend-${tournament.id}`}>End</Label>
+                              <Input id={`etend-${tournament.id}`} type="datetime-local" value={editTournamentForm.endDate} onChange={(e) => setEditTournamentForm((s) => ({ ...s, endDate: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`etreg-${tournament.id}`}>Registration closes</Label>
+                              <Input id={`etreg-${tournament.id}`} type="datetime-local" value={editTournamentForm.registrationEnd} onChange={(e) => setEditTournamentForm((s) => ({ ...s, registrationEnd: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`etmode-${tournament.id}`}>Mode</Label>
+                              <select id={`etmode-${tournament.id}`} className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" value={editTournamentForm.mode} onChange={(e) => setEditTournamentForm((s) => ({ ...s, mode: e.target.value }))}>
+                                <option value="IN_PERSON">In person</option>
+                                <option value="ONLINE">Online</option>
+                              </select>
+                            </div>
+                            <div>
+                              <Label htmlFor={`etmax-${tournament.id}`}>Max participants</Label>
+                              <Input id={`etmax-${tournament.id}`} type="number" min="2" value={editTournamentForm.maxParticipants} onChange={(e) => setEditTournamentForm((s) => ({ ...s, maxParticipants: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`etentry-${tournament.id}`}>Entry fee (USD)</Label>
+                              <Input id={`etentry-${tournament.id}`} type="number" step="0.01" min="0" value={editTournamentForm.entryFee} onChange={(e) => setEditTournamentForm((s) => ({ ...s, entryFee: e.target.value }))} disabled={editTournamentForm.registrationFree} />
+                              <div className="mt-1">
+                                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                  <input type="checkbox" className="h-4 w-4" checked={!!editTournamentForm.registrationFree} onChange={(e) => setEditTournamentForm((s) => ({ ...s, registrationFree: e.target.checked }))} />
+                                  Registration is free
+                                </label>
+                              </div>
+                            </div>
+                            <div>
+                              <Label htmlFor={`etprize-${tournament.id}`}>Prize pool (USD)</Label>
+                              <Input id={`etprize-${tournament.id}`} type="number" step="0.01" min="0" value={editTournamentForm.prizePool} onChange={(e) => setEditTournamentForm((s) => ({ ...s, prizePool: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`etformat-${tournament.id}`}>Format</Label>
+                              <Input id={`etformat-${tournament.id}`} value={editTournamentForm.format} onChange={(e) => setEditTournamentForm((s) => ({ ...s, format: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor={`ettime-${tournament.id}`}>Time control</Label>
+                              <Input id={`ettime-${tournament.id}`} value={editTournamentForm.timeControl} onChange={(e) => setEditTournamentForm((s) => ({ ...s, timeControl: e.target.value }))} />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <Label htmlFor={`etimage-${tournament.id}`}>Image URL</Label>
+                              <Input id={`etimage-${tournament.id}`} value={editTournamentForm.image} onChange={(e) => setEditTournamentForm((s) => ({ ...s, image: e.target.value }))} />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <Label htmlFor={`etrules-${tournament.id}`}>Rules</Label>
+                              <textarea id={`etrules-${tournament.id}`} className="h-24 w-full rounded-xl border border-purple-200/60 bg-white/70 p-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" value={editTournamentForm.rules} onChange={(e) => setEditTournamentForm((s) => ({ ...s, rules: e.target.value }))} />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <Label htmlFor={`etdesc-${tournament.id}`}>Description</Label>
+                              <textarea id={`etdesc-${tournament.id}`} className="h-24 w-full rounded-xl border border-purple-200/60 bg-white/70 p-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" value={editTournamentForm.description} onChange={(e) => setEditTournamentForm((s) => ({ ...s, description: e.target.value }))} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {tournament.mode === 'ONLINE' && (
                         <div className="mt-5 rounded-xl border border-purple-200/60 bg-purple-50/40 p-4">
