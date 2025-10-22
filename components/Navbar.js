@@ -57,6 +57,7 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-4">
             <NavLink href="/play">Play</NavLink>
             <NavLink href="/live">Live</NavLink>
+            <NavLink href="/leaderboard">Leaderboard</NavLink>
             <NavLink href="/tournaments">Tournaments</NavLink>
             <NavLink href="/fund-me">Fund Me</NavLink>
             <NavLink href="/store">Store</NavLink>
@@ -65,12 +66,14 @@ export default function Navbar() {
               <>
                 <NavLink href="/puzzles">Puzzles</NavLink>
                 <NavLink href="/resources">Resources</NavLink>
+                <NavLink href="/dashboard/student/analytics/puzzles">Analytics</NavLink>
               </>
             )}
             {user?.role === 'ADMIN' && (
               <>
                 <NavLink href="/dashboard/admin/puzzles">Admin Puzzles</NavLink>
                 <NavLink href="/dashboard/admin/resources">Admin Resources</NavLink>
+                <NavLink href="/dashboard/admin/analytics/puzzles">Puzzles Analytics</NavLink>
               </>
             )}
           </nav>
@@ -115,6 +118,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-2">
               <NavLink href="/play" onClick={closeMenu}>Play</NavLink>
               <NavLink href="/live" onClick={closeMenu}>Live</NavLink>
+              <NavLink href="/leaderboard" onClick={closeMenu}>Leaderboard</NavLink>
               <NavLink href="/tournaments" onClick={closeMenu}>Tournaments</NavLink>
               <NavLink href="/fund-me" onClick={closeMenu}>Fund Me</NavLink>
               <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
@@ -123,12 +127,14 @@ export default function Navbar() {
                 <>
                   <NavLink href="/puzzles" onClick={closeMenu}>Puzzles</NavLink>
                   <NavLink href="/resources" onClick={closeMenu}>Resources</NavLink>
+                  <NavLink href="/dashboard/student/analytics/puzzles" onClick={closeMenu}>Analytics</NavLink>
                 </>
               )}
               {user?.role === 'ADMIN' && (
                 <>
                   <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
                   <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
+                  <NavLink href="/dashboard/admin/analytics/puzzles" onClick={closeMenu}>Puzzles Analytics</NavLink>
                 </>
               )}
               <div className="h-px w-full bg-purple-200/60 my-2" />

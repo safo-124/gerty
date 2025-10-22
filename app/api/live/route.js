@@ -40,7 +40,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { title, ai = false, aiLevel = 1, humanSide = 'white' } = body || {};
+    const { title, ai = false, aiLevel = 1, humanSide = 'white', tc = 0, inc = 0 } = body || {};
 
     let whiteToken = makeToken();
     let blackToken = makeToken();
@@ -55,11 +55,17 @@ export async function POST(request) {
       }
     }
 
+    const baseSeconds = Math.max(0, Number(tc) || 0);
+    const incSeconds = Math.max(0, Number(inc) || 0);
     const match = await prisma.liveMatch.create({
       data: {
         title: title?.slice(0, 80) || null,
         whiteToken,
         blackToken,
+        tcSeconds: baseSeconds,
+        incSeconds,
+        whiteTimeMs: baseSeconds * 1000,
+        blackTimeMs: baseSeconds * 1000,
       },
     });
 

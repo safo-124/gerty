@@ -455,6 +455,14 @@ export default function StudentDashboard() {
                   Browse Tournaments
                 </Button>
               </Link>
+              <Link href="/dashboard/student/analytics/puzzles">
+                <Button 
+                  variant="outline" 
+                  className="bg-white/20 border-white/40 text-white hover:bg-white/30"
+                >
+                  Puzzles Analytics
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

@@ -20,7 +20,7 @@ export default function PlayHome() {
       const res = await fetch('/api/live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, tc: Math.max(0, Math.floor(tcMin * 60)), inc: Math.max(0, Math.floor(tcInc)) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create');
@@ -47,7 +47,7 @@ export default function PlayHome() {
       const res = await fetch('/api/live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, ai: true, aiLevel, humanSide: aiSide }),
+        body: JSON.stringify({ title, ai: true, aiLevel, humanSide: aiSide, tc: Math.max(0, Math.floor(tcMin * 60)), inc: Math.max(0, Math.floor(tcInc)) }),
       });
   const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create');

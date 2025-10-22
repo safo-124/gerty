@@ -900,6 +900,9 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/dashboard/admin/analytics/puzzles" className="hidden sm:block">
+            <Button variant="gradient" size="sm">Puzzles Analytics</Button>
+          </Link>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? 'Refreshing...' : 'Refresh data'}
           </Button>

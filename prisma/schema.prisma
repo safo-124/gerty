@@ -389,6 +389,11 @@ model LiveMatch {
   opponentType OpponentType @default(HUMAN)
   aiLevel      Int?
   humanSide    Side?
+  // Time control & clocks (optional, 0 = untimed)
+  tcSeconds   Int       @default(0)
+  incSeconds  Int       @default(0)
+  whiteTimeMs Int       @default(0)
+  blackTimeMs Int       @default(0)
   lastMoveAt DateTime   @default(now())
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt

@@ -69,7 +69,7 @@ export async function POST(request, { params }) {
     const { from, to, promotion } = body || {};
     if (!from || !to) return NextResponse.json({ error: 'from and to are required' }, { status: 400 });
 
-    const match = await prisma.liveMatch.findUnique({ where: { id } });
+  const match = await prisma.liveMatch.findUnique({ where: { id } });
     if (!match) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     // Token/turn validation (allow only human tokens to move)
@@ -87,7 +87,30 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Not your turn' }, { status: 403 });
     }
 
-  const chess = new Chess(match.fen);
+    // Time control enforcement (before applying move)
+    const now = Date.now();
+    const timed = (match.tcSeconds || 0) > 0;
+    let wTime = match.whiteTimeMs || 0;
+    let bTime = match.blackTimeMs || 0;
+    if (timed) {
+      const lastAt = new Date(match.lastMoveAt).getTime();
+      const elapsed = Math.max(0, now - lastAt);
+      if (match.turn === 'w') {
+        wTime = Math.max(0, wTime - elapsed);
+        if (wTime <= 0) {
+          const savedTimeout = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '0-1' } });
+          const { whiteToken, blackToken, ...safe } = savedTimeout; return NextResponse.json({ match: safe });
+        }
+      } else {
+        bTime = Math.max(0, bTime - elapsed);
+        if (bTime <= 0) {
+          const savedTimeout = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '1-0' } });
+          const { whiteToken, blackToken, ...safe } = savedTimeout; return NextResponse.json({ match: safe });
+        }
+      }
+    }
+
+    const chess = new Chess(match.fen);
     const move = chess.move({ from, to, promotion });
     if (!move) return NextResponse.json({ error: 'Illegal move' }, { status: 400 });
 
@@ -108,6 +131,20 @@ export async function POST(request, { params }) {
       }
     }
 
+    // Update clocks for mover: subtract elapsed, then add increment
+    if (timed) {
+      const incMs = (match.incSeconds || 0) * 1000;
+      if (match.turn === 'w') {
+        // White just moved
+        wTime = Math.max(0, wTime + incMs);
+      } else {
+        // Black just moved
+        bTime = Math.max(0, bTime + incMs);
+      }
+      updated.whiteTimeMs = wTime;
+      updated.blackTimeMs = bTime;
+    }
+
     let saved = await prisma.liveMatch.update({ where: { id }, data: updated });
 
     // If opponent is AI and game still ongoing and now it's AI's turn, make AI move
@@ -119,25 +156,72 @@ export async function POST(request, { params }) {
       const [minD, maxD] = delays[Math.max(1, Math.min(3, level))];
       const delay = Math.floor(minD + Math.random() * (maxD - minD));
       await new Promise((r) => setTimeout(r, delay));
-      const aiMove = pickAIMove(Chess, saved.fen, aiSide, Math.max(1, Math.min(3, level)));
-      if (aiMove) {
-        const c2 = new Chess(saved.fen);
-        c2.move(aiMove);
-        const upd2 = {
-          fen: c2.fen(),
-          pgn: c2.pgn(),
-          turn: c2.turn(),
-          lastMoveAt: new Date(),
-        };
-        if (c2.isGameOver()) {
-          upd2.status = c2.isCheckmate() ? 'CHECKMATE' : 'DRAW';
-          if (upd2.status === 'CHECKMATE') {
-            upd2.result = c2.turn() === 'w' ? '0-1' : '1-0';
-          } else {
-            upd2.result = '1/2-1/2';
+      // Time enforcement for AI side prior to moving
+      if (timed) {
+        const lastAt2 = new Date(saved.lastMoveAt).getTime();
+        const elapsed2 = Math.max(0, Date.now() - lastAt2);
+        let w2 = saved.whiteTimeMs || 0; let b2 = saved.blackTimeMs || 0;
+        if (aiSide === 'w') {
+          w2 = Math.max(0, w2 - elapsed2);
+          if (w2 <= 0) {
+            const tSaved = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '0-1' } });
+            const { whiteToken, blackToken, ...safe } = tSaved; return NextResponse.json({ match: safe });
+          }
+        } else {
+          b2 = Math.max(0, b2 - elapsed2);
+          if (b2 <= 0) {
+            const tSaved = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '1-0' } });
+            const { whiteToken, blackToken, ...safe } = tSaved; return NextResponse.json({ match: safe });
           }
         }
-        saved = await prisma.liveMatch.update({ where: { id }, data: upd2 });
+        // Apply AI move
+        const aiMove = pickAIMove(Chess, saved.fen, aiSide, Math.max(1, Math.min(3, level)));
+        if (aiMove) {
+          const c2 = new Chess(saved.fen);
+          c2.move(aiMove);
+          const upd2 = {
+            fen: c2.fen(),
+            pgn: c2.pgn(),
+            turn: c2.turn(),
+            lastMoveAt: new Date(),
+          };
+          // Add increment for AI
+          if (timed) {
+            const incMs2 = (match.incSeconds || 0) * 1000;
+            if (aiSide === 'w') w2 = Math.max(0, w2 + incMs2); else b2 = Math.max(0, b2 + incMs2);
+            upd2.whiteTimeMs = w2; upd2.blackTimeMs = b2;
+          }
+          if (c2.isGameOver()) {
+            upd2.status = c2.isCheckmate() ? 'CHECKMATE' : 'DRAW';
+            if (upd2.status === 'CHECKMATE') {
+              upd2.result = c2.turn() === 'w' ? '0-1' : '1-0';
+            } else {
+              upd2.result = '1/2-1/2';
+            }
+          }
+          saved = await prisma.liveMatch.update({ where: { id }, data: upd2 });
+        }
+      } else {
+        const aiMove = pickAIMove(Chess, saved.fen, aiSide, Math.max(1, Math.min(3, level)));
+        if (aiMove) {
+          const c2 = new Chess(saved.fen);
+          c2.move(aiMove);
+          const upd2 = {
+            fen: c2.fen(),
+            pgn: c2.pgn(),
+            turn: c2.turn(),
+            lastMoveAt: new Date(),
+          };
+          if (c2.isGameOver()) {
+            upd2.status = c2.isCheckmate() ? 'CHECKMATE' : 'DRAW';
+            if (upd2.status === 'CHECKMATE') {
+              upd2.result = c2.turn() === 'w' ? '0-1' : '1-0';
+            } else {
+              upd2.result = '1/2-1/2';
+            }
+          }
+          saved = await prisma.liveMatch.update({ where: { id }, data: upd2 });
+        }
       }
     }
 
