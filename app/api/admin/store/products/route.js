@@ -43,3 +43,25 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }
+
+export async function GET(request) {
+  try {
+    const auth = await verifyAuth(request);
+    if (!auth.valid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (auth.payload?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    // Optionally include deleted via ?includeDeleted=1
+    const url = new URL(request.url);
+    const includeDeleted = url.searchParams.get('includeDeleted') === '1';
+
+    const products = await prisma.product.findMany({
+      where: includeDeleted ? {} : { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      include: { images: true },
+    });
+    return NextResponse.json({ products });
+  } catch (error) {
+    console.error('Admin list products error:', error);
+    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+  }
+}

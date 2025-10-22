@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
-      where: { active: true },
+      where: { active: true, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       include: { images: true },
     });

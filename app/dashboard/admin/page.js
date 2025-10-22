@@ -103,6 +103,8 @@ export default function AdminDashboard() {
   });
   const [editingProductId, setEditingProductId] = useState(null);
   const [editProductForm, setEditProductForm] = useState({ name: '', description: '', price: '', stock: '' });
+  const [editLocalFiles, setEditLocalFiles] = useState([]);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
 
   const [createTournamentForm, setCreateTournamentForm] = useState({
     name: '',
@@ -207,7 +209,8 @@ export default function AdminDashboard() {
   const fetchStoreProducts = useCallback(async () => {
     setStoreLoading(true);
     try {
-      const res = await fetch('/api/store/products');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch('/api/admin/store/products', { headers });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load products');
       setStoreProducts(data.products || []);
@@ -216,7 +219,7 @@ export default function AdminDashboard() {
     } finally {
       setStoreLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (activeTab === 'store') {
@@ -233,10 +236,10 @@ export default function AdminDashboard() {
     setCreateProductForm((prev) => ({ ...prev, localFiles: arr }));
   };
 
-  const handleUploadFiles = async () => {
-    if (!token || createProductForm.localFiles.length === 0) return [];
+  const uploadFiles = async (files) => {
+    if (!token || !files || files.length === 0) return [];
     const uploaded = [];
-    for (const f of createProductForm.localFiles) {
+    for (const f of files) {
       const form = new FormData();
       form.append('file', f);
       form.append('filename', f.name);
@@ -251,6 +254,7 @@ export default function AdminDashboard() {
     }
     return uploaded;
   };
+  const handleUploadFiles = async () => uploadFiles(createProductForm.localFiles);
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
@@ -313,21 +317,28 @@ export default function AdminDashboard() {
       price: String(p.price ?? ''),
       stock: String(p.stock ?? ''),
     });
+    setEditLocalFiles([]);
   };
 
   const cancelEditProduct = () => {
     setEditingProductId(null);
     setEditProductForm({ name: '', description: '', price: '', stock: '' });
+    setEditLocalFiles([]);
   };
 
   const saveEditProduct = async () => {
     if (!token || !editingProductId) return;
     try {
+      let images;
+      if (editLocalFiles.length > 0) {
+        images = await uploadFiles(editLocalFiles);
+      }
       const payload = {
         name: editProductForm.name.trim() || undefined,
         description: editProductForm.description.trim() || undefined,
         price: editProductForm.price !== '' ? Number(editProductForm.price) : undefined,
         stock: editProductForm.stock !== '' ? Number(editProductForm.stock) : undefined,
+        ...(images ? { images } : {}),
       };
       const res = await fetch(`/api/admin/store/products/${editingProductId}`, {
         method: 'PATCH',
@@ -340,6 +351,74 @@ export default function AdminDashboard() {
       await fetchStoreProducts();
     } catch (e) {
       setError(e.message || 'Failed to update product');
+    }
+  };
+
+  const handleDeleteProduct = async (product, mode = 'soft') => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/store/products/${product.id}?mode=${mode}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete product');
+      await fetchStoreProducts();
+    } catch (e) {
+      setError(e.message || 'Failed to delete product');
+    }
+  };
+
+  const toggleSelectProduct = (id, checked) => {
+    setSelectedProductIds((prev) => {
+      const set = new Set(prev);
+      if (checked) set.add(id);
+      else set.delete(id);
+      return Array.from(set);
+    });
+  };
+
+  const clearSelected = () => setSelectedProductIds([]);
+
+  const bulkEnableDisable = async (enable = true) => {
+    if (!token || selectedProductIds.length === 0) return;
+    try {
+      const res = await fetch('/api/admin/store/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ids: selectedProductIds, action: enable ? 'enable' : 'disable' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Bulk action failed');
+      clearSelected();
+      await fetchStoreProducts();
+    } catch (e) {
+      setError(e.message || 'Bulk action failed');
+    }
+  };
+
+  const [bulkPrice, setBulkPrice] = useState('');
+  const [bulkStock, setBulkStock] = useState('');
+  const bulkSetPriceStock = async () => {
+    if (!token || selectedProductIds.length === 0) return;
+    try {
+      const payload = { ids: selectedProductIds, action: 'set' };
+      if (bulkPrice !== '') payload.price = Number(bulkPrice);
+      if (bulkStock !== '') payload.stock = Number(bulkStock);
+      if (payload.price === undefined && payload.stock === undefined) return;
+      const res = await fetch('/api/admin/store/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Bulk update failed');
+      setBulkPrice('');
+      setBulkStock('');
+      clearSelected();
+      await fetchStoreProducts();
+    } catch (e) {
+      setError(e.message || 'Bulk update failed');
     }
   };
 
@@ -1120,11 +1199,31 @@ export default function AdminDashboard() {
                     <CardDescription>Current items in the store</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {selectedProductIds.length > 0 && (
+                      <div className="mb-2 flex flex-wrap items-end gap-2 rounded-md border border-purple-200/60 bg-purple-50/60 p-2">
+                        <span className="text-sm text-gray-700">Selected: {selectedProductIds.length}</span>
+                        <Button size="sm" variant="secondary" onClick={() => bulkEnableDisable(true)}>Enable</Button>
+                        <Button size="sm" variant="outline" onClick={() => bulkEnableDisable(false)}>Disable</Button>
+                        <div className="flex items-end gap-2">
+                          <div>
+                            <Label htmlFor="bulkPrice" className="text-xs">Set price</Label>
+                            <Input id="bulkPrice" type="number" step="0.01" value={bulkPrice} onChange={(e) => setBulkPrice(e.target.value)} className="h-8" />
+                          </div>
+                          <div>
+                            <Label htmlFor="bulkStock" className="text-xs">Set stock</Label>
+                            <Input id="bulkStock" type="number" step="1" value={bulkStock} onChange={(e) => setBulkStock(e.target.value)} className="h-8" />
+                          </div>
+                          <Button size="sm" onClick={bulkSetPriceStock}>Update</Button>
+                          <Button size="sm" variant="ghost" onClick={clearSelected}>Clear</Button>
+                        </div>
+                      </div>
+                    )}
                     {storeLoading && <p className="text-sm text-gray-500">Loading...</p>}
                     {!storeLoading && storeProducts.length === 0 && <p className="text-sm text-gray-500">No products yet.</p>}
                     {storeProducts.map((p) => (
                       <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                         <div className="flex items-center gap-3">
+                          <input type="checkbox" className="h-4 w-4" checked={selectedProductIds.includes(p.id)} onChange={(e) => toggleSelectProduct(p.id, e.target.checked)} />
                           {p.images?.[0]?.url && (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.images[0].url} alt={p.name} className="h-12 w-12 rounded object-cover" />
@@ -1144,7 +1243,11 @@ export default function AdminDashboard() {
                               <Button size="sm" variant="outline" onClick={cancelEditProduct}>Cancel</Button>
                             </div>
                           ) : (
-                            <Button size="sm" onClick={() => startEditProduct(p)}>Edit</Button>
+                            <>
+                              <Button size="sm" onClick={() => startEditProduct(p)}>Edit</Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteProduct(p, 'soft')}>Soft Delete</Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteProduct(p, 'hard')}>Hard Delete</Button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -1169,6 +1272,11 @@ export default function AdminDashboard() {
                           <div className="col-span-2">
                             <Label htmlFor="edesc">Description</Label>
                             <Input id="edesc" value={editProductForm.description} onChange={(e) => setEditProductForm((s) => ({ ...s, description: e.target.value }))} />
+                          </div>
+                          <div className="col-span-2">
+                            <Label htmlFor="eimages">Replace images (optional)</Label>
+                            <Input id="eimages" type="file" accept="image/*" multiple onChange={(e) => setEditLocalFiles(Array.from(e.target.files || []))} />
+                            <p className="mt-1 text-xs text-gray-500">If selected, all existing images will be replaced.</p>
                           </div>
                         </div>
                       </div>

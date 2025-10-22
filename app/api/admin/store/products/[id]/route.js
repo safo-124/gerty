@@ -9,6 +9,15 @@ const updateSchema = z.object({
   price: z.number().positive().optional(),
   stock: z.number().int().nonnegative().optional(),
   active: z.boolean().optional(),
+  images: z
+    .array(
+      z.object({
+        url: z.string().url(),
+        width: z.number().int().optional(),
+        height: z.number().int().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export async function PATCH(request, { params }) {
@@ -31,9 +40,19 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
+    // Build update payload, handling optional image replacement
+    const { images, ...rest } = data;
+    const updateData = { ...rest };
+    if (images) {
+      updateData.images = {
+        deleteMany: {},
+        create: images.map((img) => ({ url: img.url, width: img.width, height: img.height })),
+      };
+    }
+
     const updated = await prisma.product.update({
       where: { id },
-      data,
+      data: updateData,
       include: { images: true },
     });
 
@@ -41,5 +60,46 @@ export async function PATCH(request, { params }) {
   } catch (error) {
     console.error('Admin update product error:', error);
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const auth = await verifyAuth(request);
+    if (!auth.valid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (auth.payload?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const { id } = params || {};
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const url = new URL(request.url);
+    const mode = url.searchParams.get('mode') || 'soft';
+
+    if (mode === 'soft') {
+      const updated = await prisma.product.update({
+        where: { id },
+        data: { active: false, deletedAt: new Date() },
+      });
+      return NextResponse.json({ ok: true, softDeleted: true, id: updated.id });
+    }
+
+    if (mode === 'hard') {
+      // Ensure no order items reference this product before hard delete
+      const count = await prisma.orderItem.count({ where: { productId: id } });
+      if (count > 0) {
+        return NextResponse.json(
+          { error: 'Cannot hard delete a product with existing orders. Consider soft deleting instead.' },
+          { status: 409 },
+        );
+      }
+
+      await prisma.product.delete({ where: { id } });
+      return NextResponse.json({ ok: true, hardDeleted: true, id });
+    }
+
+    return NextResponse.json({ error: 'Invalid delete mode' }, { status: 400 });
+  } catch (error) {
+    console.error('Admin delete product error:', error);
+    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
 }
