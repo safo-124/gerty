@@ -79,6 +79,13 @@ export default function AdminDashboard() {
   const [students, setStudents] = useState([]);
   const [donations, setDonations] = useState([]);
   const [donationTotals, setDonationTotals] = useState([]);
+  const [causes, setCauses] = useState([]);
+  const [causesLoading, setCausesLoading] = useState(false);
+  const [createCauseLoading, setCreateCauseLoading] = useState(false);
+  const [createCauseError, setCreateCauseError] = useState('');
+  const [createCauseForm, setCreateCauseForm] = useState({ title: '', description: '', goalAmount: '', image: '' });
+  const [editingCauseId, setEditingCauseId] = useState(null);
+  const [editCauseForm, setEditCauseForm] = useState({ title: '', description: '', goalAmount: '', image: '' });
   const [tournaments, setTournaments] = useState([]);
   const [trainerFilter, setTrainerFilter] = useState('all');
   const [approvingId, setApprovingId] = useState(null);
@@ -200,9 +207,26 @@ export default function AdminDashboard() {
     }
   }, [authLoading, user, token, fetchAllData]);
 
+  const fetchCauses = useCallback(async () => {
+    if (!token) return;
+    setCausesLoading(true);
+    try {
+      const res = await fetch('/api/admin/fund-me/causes', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load causes');
+      setCauses(data.causes || []);
+    } catch (e) {
+      console.error('Load causes error:', e);
+      setError(e.message || 'Failed to load causes');
+    } finally {
+      setCausesLoading(false);
+    }
+  }, [token]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchAllData({ silent: true });
+    if (activeTab === 'funds') await fetchCauses();
     setRefreshing(false);
   };
 
@@ -225,7 +249,10 @@ export default function AdminDashboard() {
     if (activeTab === 'store') {
       fetchStoreProducts();
     }
-  }, [activeTab, fetchStoreProducts]);
+    if (activeTab === 'funds' && token) {
+      fetchCauses();
+    }
+  }, [activeTab, fetchStoreProducts, fetchCauses, token]);
 
   const handleProductFieldChange = (field, value) => {
     setCreateProductForm((prev) => ({ ...prev, [field]: value }));
@@ -573,6 +600,140 @@ export default function AdminDashboard() {
   );
 
   const donationCount = donations.length;
+
+  const handleCreateCauseField = (field, value) => {
+    setCreateCauseForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateCause = async (e) => {
+    e.preventDefault();
+    if (!token) return;
+    setCreateCauseError('');
+    setCreateCauseLoading(true);
+    try {
+      const payload = {
+        title: createCauseForm.title.trim(),
+        description: createCauseForm.description.trim() || undefined,
+        goalAmount: createCauseForm.goalAmount !== '' ? Number(createCauseForm.goalAmount) : undefined,
+        image: createCauseForm.image.trim() || undefined,
+      };
+      if (!payload.title) throw new Error('Title is required');
+      const res = await fetch('/api/admin/fund-me/causes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to create cause');
+      setCreateCauseForm({ title: '', description: '', goalAmount: '', image: '' });
+      await fetchCauses();
+    } catch (e) {
+      setCreateCauseError(e.message || 'Failed to create cause');
+    } finally {
+      setCreateCauseLoading(false);
+    }
+  };
+
+  const handleCreateCauseImageFile = async (event) => {
+    try {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      const uploaded = await uploadFiles(files);
+      if (uploaded[0]?.url) {
+        setCreateCauseForm((prev) => ({ ...prev, image: uploaded[0].url }));
+      }
+    } catch (e) {
+      setCreateCauseError(e.message || 'Image upload failed');
+    } finally {
+      // reset value so same file can be re-selected if needed
+      event.target.value = '';
+    }
+  };
+
+  const toggleCauseActive = async (cause) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/fund-me/causes/${cause.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ active: !cause.active }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update cause');
+      await fetchCauses();
+    } catch (e) {
+      setError(e.message || 'Failed to update cause');
+    }
+  };
+
+  const startEditCause = (cause) => {
+    setEditingCauseId(cause.id);
+    setEditCauseForm({
+      title: cause.title || '',
+      description: cause.description || '',
+      goalAmount: cause.goalAmount != null ? String(cause.goalAmount) : '',
+      image: cause.image || '',
+    });
+  };
+
+  const cancelEditCause = () => {
+    setEditingCauseId(null);
+    setEditCauseForm({ title: '', description: '', goalAmount: '', image: '' });
+  };
+
+  const saveEditCause = async () => {
+    if (!token || !editingCauseId) return;
+    try {
+      const payload = {
+        title: editCauseForm.title.trim() || undefined,
+        description: editCauseForm.description.trim() || undefined,
+        goalAmount: editCauseForm.goalAmount !== '' ? Number(editCauseForm.goalAmount) : undefined,
+        image: editCauseForm.image.trim() || undefined,
+      };
+      const res = await fetch(`/api/admin/fund-me/causes/${editingCauseId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to update cause');
+      cancelEditCause();
+      await fetchCauses();
+    } catch (e) {
+      setError(e.message || 'Failed to update cause');
+    }
+  };
+
+  const handleEditCauseImageFile = async (event) => {
+    try {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      const uploaded = await uploadFiles(files);
+      if (uploaded[0]?.url) {
+        setEditCauseForm((prev) => ({ ...prev, image: uploaded[0].url }));
+      }
+    } catch (e) {
+      setError(e.message || 'Image upload failed');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const deleteCause = async (cause, mode = 'soft') => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/fund-me/causes/${cause.id}?mode=${mode}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete cause');
+      if (editingCauseId === cause.id) cancelEditCause();
+      await fetchCauses();
+    } catch (e) {
+      setError(e.message || 'Failed to delete cause');
+    }
+  };
 
   if (authLoading || !user || user.role !== 'ADMIN') {
     return (
@@ -924,6 +1085,107 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+            
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Causes</CardTitle>
+                  <CardDescription>Create and manage donation causes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <div>
+                      {createCauseError && (
+                        <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">{createCauseError}</div>
+                      )}
+                      <form onSubmit={handleCreateCause} className="space-y-3">
+                        <div>
+                          <Label htmlFor="ctitle">Title</Label>
+                          <Input id="ctitle" value={createCauseForm.title} onChange={(e) => handleCreateCauseField('title', e.target.value)} />
+                        </div>
+                        <div>
+                          <Label htmlFor="cdesc">Description</Label>
+                          <textarea id="cdesc" className="h-24 w-full rounded-xl border border-purple-200/60 bg-white/70 p-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" value={createCauseForm.description} onChange={(e) => handleCreateCauseField('description', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="cgoal">Goal amount (USD)</Label>
+                            <Input id="cgoal" type="number" step="0.01" min="0" value={createCauseForm.goalAmount} onChange={(e) => handleCreateCauseField('goalAmount', e.target.value)} />
+                          </div>
+                          <div>
+                            <Label htmlFor="cimage">Image URL</Label>
+                            <Input id="cimage" value={createCauseForm.image} onChange={(e) => handleCreateCauseField('image', e.target.value)} placeholder="https://..." />
+                            <div className="mt-2">
+                              <input id="cimage-file" type="file" accept="image/*" onChange={handleCreateCauseImageFile} />
+                              <p className="mt-1 text-xs text-gray-500">Upload an image file or paste an image URL above.</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button type="submit" disabled={createCauseLoading}>{createCauseLoading ? 'Creating...' : 'Create Cause'}</Button>
+                      </form>
+                    </div>
+                    <div>
+                      {causesLoading && <p className="text-sm text-gray-500">Loading causes...</p>}
+                      {!causesLoading && causes.length === 0 && <p className="text-sm text-gray-500">No causes yet.</p>}
+                      <div className="space-y-3">
+                        {causes.map((c) => (
+                          <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {c.title} {!c.active && (<span className="ml-1 text-xs text-gray-500">(inactive)</span>)}
+                              </p>
+                              <p className="text-xs text-gray-600">Raised: {formatCurrency(c?.totals?.totalAmount || 0, 'USD')}{c.goalAmount ? ` of ${formatCurrency(c.goalAmount, 'USD')}` : ''}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant={c.active ? 'outline' : 'secondary'} onClick={() => toggleCauseActive(c)}>
+                                {c.active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              {editingCauseId === c.id ? (
+                                <>
+                                  <Button size="sm" variant="secondary" onClick={saveEditCause}>Save</Button>
+                                  <Button size="sm" variant="outline" onClick={cancelEditCause}>Cancel</Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button size="sm" onClick={() => startEditCause(c)}>Edit</Button>
+                                  <Button size="sm" variant="outline" onClick={() => deleteCause(c, 'soft')}>Soft Delete</Button>
+                                  <Button size="sm" variant="destructive" onClick={() => deleteCause(c, 'hard')}>Hard Delete</Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {editingCauseId && (
+                        <div className="mt-3 space-y-2 rounded-lg border p-3">
+                          <p className="text-sm font-medium">Edit Cause</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                              <Label htmlFor="ctitle-edit">Title</Label>
+                              <Input id="ctitle-edit" value={editCauseForm.title} onChange={(e) => setEditCauseForm((s) => ({ ...s, title: e.target.value }))} />
+                            </div>
+                            <div className="col-span-2">
+                              <Label htmlFor="cdesc-edit">Description</Label>
+                              <textarea id="cdesc-edit" className="h-24 w-full rounded-xl border border-purple-200/60 bg-white/70 p-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" value={editCauseForm.description} onChange={(e) => setEditCauseForm((s) => ({ ...s, description: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor="cgoal-edit">Goal amount (USD)</Label>
+                              <Input id="cgoal-edit" type="number" step="0.01" min="0" value={editCauseForm.goalAmount} onChange={(e) => setEditCauseForm((s) => ({ ...s, goalAmount: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label htmlFor="cimage-edit">Image URL</Label>
+                              <Input id="cimage-edit" value={editCauseForm.image} onChange={(e) => setEditCauseForm((s) => ({ ...s, image: e.target.value }))} />
+                              <div className="mt-2">
+                                <input id="cimage-edit-file" type="file" accept="image/*" onChange={handleEditCauseImageFile} />
+                                <p className="mt-1 text-xs text-gray-500">Upload an image file or paste an image URL above.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>

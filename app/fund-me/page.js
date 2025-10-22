@@ -117,6 +117,7 @@ const defaultFormData = {
   amount: '50',
   currency: 'USD',
   message: '',
+  causeId: '',
 };
 
 export default function FundMePage() {
@@ -124,6 +125,7 @@ export default function FundMePage() {
   const [error, setError] = useState('');
   const [donations, setDonations] = useState([]);
   const [summary, setSummary] = useState({ totalAmount: 0, totalDonations: 0 });
+  const [causes, setCauses] = useState([]);
   const [infoMessage, setInfoMessage] = useState('');
   const [formData, setFormData] = useState(defaultFormData);
   const [formErrors, setFormErrors] = useState({});
@@ -172,8 +174,17 @@ export default function FundMePage() {
     }
   };
 
+  const fetchCauses = async () => {
+    try {
+      const res = await fetch('/api/fund-me/causes');
+      const data = await res.json();
+      if (res.ok) setCauses(data.causes || []);
+    } catch {}
+  };
+
   useEffect(() => {
     fetchDonations();
+    fetchCauses();
   }, []);
 
   const handleFieldChange = (field, value) => {
@@ -396,6 +407,47 @@ export default function FundMePage() {
         </div>
       </section>
 
+      {/* Causes */}
+      {Array.isArray(causes) && causes.length > 0 && (
+        <section className="bg-gradient-to-br from-white via-slate-50 to-purple-50 px-4 py-20">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-12 text-center">
+              <Badge variant="outline" className="mb-4 border-purple-300 text-purple-700">
+                Current Causes
+              </Badge>
+              <h2 className="text-4xl font-bold text-gray-900">Support a Cause</h2>
+              <p className="mt-2 text-gray-600">Choose a cause to see its progress and direct your gift.</p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {causes.map((c) => {
+                const total = c?.totals?.totalAmount || 0;
+                const goal = c?.goalAmount || 0;
+                const pct = goal > 0 ? Math.min(100, Math.round((total / goal) * 100)) : null;
+                return (
+                  <Card key={c.id} className="border-purple-200/60 bg-white/80">
+                    <CardHeader>
+                      <CardTitle className="text-xl">{c.title}</CardTitle>
+                      {c.description && <CardDescription>{c.description}</CardDescription>}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-3 flex items-center justify-between text-sm text-gray-700">
+                        <span>Raised: {formatCurrency(total, 'USD')}</span>
+                        {goal > 0 && <span>Goal: {formatCurrency(goal, 'USD')}</span>}
+                      </div>
+                      {pct !== null && (
+                        <div className="h-3 w-full overflow-hidden rounded-full bg-purple-100">
+                          <div className="h-full rounded-full bg-purple-500" style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Impact Calculator */}
       <section className="bg-white px-4 py-20">
         <div className="mx-auto max-w-4xl">
@@ -537,6 +589,21 @@ export default function FundMePage() {
             </CardHeader>
             <CardContent>
               <form className="space-y-5" onSubmit={handleSubmit}>
+                <div>
+                  <Label className="mb-2 block text-sm text-gray-700">Cause (optional)</Label>
+                  <select
+                    className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    value={formData.causeId}
+                    onChange={(e) => handleFieldChange('causeId', e.target.value)}
+                  >
+                    <option value="">General Support</option>
+                    {causes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <Label className="mb-3 block text-sm text-gray-700">Amount (USD)</Label>
                   <div className="mb-3 flex flex-wrap gap-2">

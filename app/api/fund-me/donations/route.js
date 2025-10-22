@@ -63,6 +63,14 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Donation amount must be a valid number' }, { status: 400 });
     }
 
+    // If a causeId is provided, ensure the cause exists and is active
+    if (parsed.causeId) {
+      const cause = await prisma.cause.findUnique({ where: { id: parsed.causeId } });
+      if (!cause || !cause.active) {
+        return NextResponse.json({ error: 'Invalid or inactive cause selected' }, { status: 400 });
+      }
+    }
+
     const donation = await prisma.donation.create({
       data: {
         name: parsed.name,
@@ -70,6 +78,7 @@ export async function POST(request) {
         amount: parsed.amount,
         currency: parsed.currency || 'USD',
         message: parsed.message || null,
+        causeId: parsed.causeId || null,
       },
     });
 
