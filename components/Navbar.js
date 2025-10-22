@@ -61,6 +61,18 @@ export default function Navbar() {
             <NavLink href="/fund-me">Fund Me</NavLink>
             <NavLink href="/store">Store</NavLink>
             <NavLink href="/trainers">Trainers</NavLink>
+            {user?.role === 'STUDENT' && (
+              <>
+                <NavLink href="/puzzles">Puzzles</NavLink>
+                <NavLink href="/resources">Resources</NavLink>
+              </>
+            )}
+            {user?.role === 'ADMIN' && (
+              <>
+                <NavLink href="/dashboard/admin/puzzles">Admin Puzzles</NavLink>
+                <NavLink href="/dashboard/admin/resources">Admin Resources</NavLink>
+              </>
+            )}
           </nav>
 
           {/* Actions */}
@@ -107,6 +119,18 @@ export default function Navbar() {
               <NavLink href="/fund-me" onClick={closeMenu}>Fund Me</NavLink>
               <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
               <NavLink href="/trainers" onClick={closeMenu}>Trainers</NavLink>
+              {user?.role === 'STUDENT' && (
+                <>
+                  <NavLink href="/puzzles" onClick={closeMenu}>Puzzles</NavLink>
+                  <NavLink href="/resources" onClick={closeMenu}>Resources</NavLink>
+                </>
+              )}
+              {user?.role === 'ADMIN' && (
+                <>
+                  <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
+                  <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
+                </>
+              )}
               <div className="h-px w-full bg-purple-200/60 my-2" />
               {user ? (
                 <>
