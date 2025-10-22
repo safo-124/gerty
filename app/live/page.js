@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function LiveListPage() {
   const [matches, setMatches] = useState([]);
@@ -32,7 +33,7 @@ export default function LiveListPage() {
       {loading ? (
         <div className="text-sm text-gray-600">Loading…</div>
       ) : !matches?.length ? (
-        <div className="text-sm text-gray-600">No live matches right now. Create one from <a href="/play" className="text-purple-600">Play</a>.</div>
+        <div className="text-sm text-gray-600">No live matches right now. Create one from <Link href="/play" className="text-purple-600">Play</Link>.</div>
       ) : (
         <>
           <div className="flex items-center gap-3 mb-3 text-sm">
@@ -55,7 +56,7 @@ export default function LiveListPage() {
                   </div>
                   <div className="text-xs text-gray-600">{new Date(m.lastMoveAt).toLocaleString()}</div>
                 </div>
-                <a href={`/play/live/${m.id}`} className="text-purple-600 text-sm">Watch</a>
+                <Link href={`/play/live/${m.id}`} className="text-purple-600 text-sm">Watch</Link>
               </li>
             ))}
           </ul>
