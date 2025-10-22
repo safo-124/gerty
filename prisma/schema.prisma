@@ -370,3 +370,36 @@ model NotificationPreference {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
+
+/// Anonymous live matches (no login required)
+model LiveMatch {
+  id         String     @id @default(cuid())
+  title      String?
+  fen        String     @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+  pgn        String?    @db.Text
+  status     GameStatus @default(ONGOING)
+  result     String?
+  turn       String     @default("w")
+  whiteToken String     @unique
+  blackToken String     @unique
+  drawOffer  String?
+  opponentType OpponentType @default(HUMAN)
+  aiLevel      Int?
+  humanSide    Side?
+  lastMoveAt DateTime   @default(now())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum OpponentType {
+  HUMAN
+  AI
+}
+
+enum Side {
+  WHITE
+  BLACK
+}

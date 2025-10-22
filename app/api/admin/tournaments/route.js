@@ -101,6 +101,7 @@ export async function POST(request) {
         format: data.format,
         timeControl: data.timeControl,
         mode: data.mode || 'IN_PERSON',
+        status: data.status || undefined,
         image: data.image || null,
         rules: data.rules || null,
       },
