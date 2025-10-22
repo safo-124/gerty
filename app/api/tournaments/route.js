@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserFromRequest } from '@/lib/auth';
-import { tournamentSchema } from '@/lib/validation';
+// Public tournaments listing; creation is handled via admin API
 
 export async function GET(request) {
   try {
@@ -26,15 +25,7 @@ export async function GET(request) {
       prisma.tournament.findMany({
         where,
         include: {
-          organizer: {
-            include: {
-              user: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
+          organizer: { select: { id: true, name: true, email: true, role: true } },
           _count: {
             select: { participants: true },
           },
@@ -64,71 +55,7 @@ export async function GET(request) {
   }
 }
 
-export async function POST(request) {
-  try {
-    const userData = getUserFromRequest(request);
-    
-    if (!userData || userData.role !== 'TRAINER') {
-      return NextResponse.json(
-        { error: 'Only trainers can create tournaments' },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    
-    // Validate input
-    const validationResult = tournamentSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.errors },
-        { status: 400 }
-      );
-    }
-
-    // Get trainer profile
-    const trainerProfile = await prisma.trainerProfile.findUnique({
-      where: { userId: userData.userId },
-    });
-
-    if (!trainerProfile) {
-      return NextResponse.json(
-        { error: 'Trainer profile not found' },
-        { status: 404 }
-      );
-    }
-
-    const data = validationResult.data;
-    const tournament = await prisma.tournament.create({
-      data: {
-        ...data,
-        organizerId: trainerProfile.id,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        registrationEnd: new Date(data.registrationEnd),
-      },
-      include: {
-        organizer: {
-          include: {
-            user: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({
-      message: 'Tournament created successfully',
-      tournament,
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Create tournament error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+// Creation is not supported on the public endpoint; use admin API instead.
+export async function POST() {
+  return NextResponse.json({ error: 'Use /api/admin/tournaments to create tournaments' }, { status: 405 });
 }

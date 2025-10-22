@@ -9,17 +9,7 @@ export async function GET(request, { params }) {
     const tournament = await prisma.tournament.findUnique({
       where: { id },
       include: {
-        organizer: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
+        organizer: { select: { id: true, name: true, email: true, role: true } },
         participants: {
           include: {
             user: {
@@ -57,23 +47,14 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const userData = getUserFromRequest(request);
-    
-    if (!userData || userData.role !== 'TRAINER') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+    if (!userData || userData.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const { id } = await params;
     const body = await request.json();
 
-    // Get trainer profile
-    const trainerProfile = await prisma.trainerProfile.findUnique({
-      where: { userId: userData.userId },
-    });
-
-    // Check if tournament exists and belongs to this trainer
+    // Check if tournament exists and belongs to this admin
     const tournament = await prisma.tournament.findUnique({
       where: { id },
     });
@@ -85,11 +66,8 @@ export async function PUT(request, { params }) {
       );
     }
 
-    if (tournament.organizerId !== trainerProfile.id) {
-      return NextResponse.json(
-        { error: 'You can only update your own tournaments' },
-        { status: 403 }
-      );
+    if (tournament.organizerId !== userData.userId) {
+      return NextResponse.json({ error: 'You can only update your own tournaments' }, { status: 403 });
     }
 
     const updatedTournament = await prisma.tournament.update({
@@ -100,17 +78,7 @@ export async function PUT(request, { params }) {
         ...(body.endDate && { endDate: new Date(body.endDate) }),
         ...(body.registrationEnd && { registrationEnd: new Date(body.registrationEnd) }),
       },
-      include: {
-        organizer: {
-          include: {
-            user: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+      include: { organizer: { select: { id: true, name: true, email: true, role: true } } },
     });
 
     return NextResponse.json({
@@ -129,22 +97,13 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const userData = getUserFromRequest(request);
-    
-    if (!userData || userData.role !== 'TRAINER') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+    if (!userData || userData.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const { id } = await params;
 
-    // Get trainer profile
-    const trainerProfile = await prisma.trainerProfile.findUnique({
-      where: { userId: userData.userId },
-    });
-
-    // Check if tournament exists and belongs to this trainer
+    // Check if tournament exists and belongs to this admin
     const tournament = await prisma.tournament.findUnique({
       where: { id },
     });
@@ -156,11 +115,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (tournament.organizerId !== trainerProfile.id) {
-      return NextResponse.json(
-        { error: 'You can only delete your own tournaments' },
-        { status: 403 }
-      );
+    if (tournament.organizerId !== userData.userId) {
+      return NextResponse.json({ error: 'You can only delete your own tournaments' }, { status: 403 });
     }
 
     await prisma.tournament.delete({

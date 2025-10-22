@@ -23,6 +23,11 @@ enum TournamentStatus {
   CANCELLED
 }
 
+enum TournamentMode {
+  IN_PERSON
+  ONLINE
+}
+
 enum LessonStatus {
   SCHEDULED
   COMPLETED
@@ -77,6 +82,13 @@ model User {
 
   // Store relations
   orders   Order[]
+
+  // Online games relations
+  gamesAsWhite Game[] @relation("WhitePlayer")
+  gamesAsBlack Game[] @relation("BlackPlayer")
+
+  // Organized tournaments (as ADMIN)
+  organizedTournaments Tournament[] @relation("OrganizerUser")
 }
 
 model TrainerProfile {
@@ -109,7 +121,6 @@ model TrainerProfile {
   
   // Relations
   reviews         Review[]
-  tournaments     Tournament[]
 }
 
 model StudentProfile {
@@ -131,7 +142,7 @@ model Tournament {
   name            String
   description     String   @db.Text
   organizerId     String
-  organizer       TrainerProfile @relation(fields: [organizerId], references: [id])
+  organizer       User     @relation("OrganizerUser", fields: [organizerId], references: [id])
   
   startDate       DateTime
   endDate         DateTime
@@ -139,10 +150,12 @@ model Tournament {
   
   maxParticipants Int?
   entryFee        Float?   @default(0)
+  registrationFree Boolean @default(false)
   prizePool       Float?
   
   format          String   // e.g., "Swiss", "Round Robin", "Knockout"
   timeControl     String   // e.g., "Rapid", "Blitz", "Classical"
+  mode            TournamentMode @default(IN_PERSON)
   status          TournamentStatus @default(UPCOMING)
   
   image           String?
@@ -153,6 +166,7 @@ model Tournament {
   
   // Relations
   participants    TournamentParticipant[]
+  games           Game[]
 }
 
 model TournamentParticipant {
@@ -313,6 +327,37 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+enum GameStatus {
+  ONGOING
+  CHECKMATE
+  DRAW
+  RESIGNATION
+  TIMEOUT
+}
+
+model Game {
+  id            String     @id @default(cuid())
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  round         Int?
+  whiteUserId   String
+  blackUserId   String
+  white         User       @relation("WhitePlayer", fields: [whiteUserId], references: [id], onDelete: Cascade)
+  black         User       @relation("BlackPlayer", fields: [blackUserId], references: [id], onDelete: Cascade)
+  fen           String     @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+  pgn           String?    @db.Text
+  status        GameStatus @default(ONGOING)
+  result        String?    // "1-0", "0-1", "1/2-1/2"
+  turn          String     @default("w") // "w" or "b"
+  lastMoveAt    DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([tournamentId])
+  @@index([whiteUserId])
+  @@index([blackUserId])
 }
 
 model NotificationPreference {

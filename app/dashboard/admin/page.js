@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Card,
@@ -94,6 +95,8 @@ export default function AdminDashboard() {
   const [createTournamentError, setCreateTournamentError] = useState('');
   const [stats, setStats] = useState({ trainerCount: 0, studentsPresentToday: 0 });
   const redirectRef = useRef(false);
+  // per-tournament create game forms: { [tournamentId]: { whiteUserId: '', blackUserId: '', creating?: boolean, error?: string, lastGameId?: string } }
+  const [createGameForms, setCreateGameForms] = useState({});
 
   // Store state
   const [storeProducts, setStoreProducts] = useState([]);
@@ -116,15 +119,16 @@ export default function AdminDashboard() {
   const [createTournamentForm, setCreateTournamentForm] = useState({
     name: '',
     description: '',
-    organizerId: '',
     startDate: '',
     endDate: '',
     registrationEnd: '',
     maxParticipants: '',
     entryFee: '',
+    registrationFree: false,
     prizePool: '',
     format: 'Swiss',
     timeControl: 'Rapid',
+    mode: 'IN_PERSON',
     image: '',
     rules: '',
   });
@@ -498,7 +502,6 @@ export default function AdminDashboard() {
       const payload = {
         name: createTournamentForm.name.trim(),
         description: createTournamentForm.description.trim(),
-        organizerId: createTournamentForm.organizerId,
         startDate: createTournamentForm.startDate
           ? new Date(createTournamentForm.startDate).toISOString()
           : null,
@@ -511,21 +514,19 @@ export default function AdminDashboard() {
         maxParticipants: createTournamentForm.maxParticipants
           ? Number(createTournamentForm.maxParticipants)
           : undefined,
-        entryFee: createTournamentForm.entryFee
-          ? Number(createTournamentForm.entryFee)
-          : undefined,
+        entryFee: createTournamentForm.registrationFree
+          ? 0
+          : (createTournamentForm.entryFee ? Number(createTournamentForm.entryFee) : undefined),
+        registrationFree: !!createTournamentForm.registrationFree,
         prizePool: createTournamentForm.prizePool
           ? Number(createTournamentForm.prizePool)
           : undefined,
         format: createTournamentForm.format.trim() || 'Swiss',
         timeControl: createTournamentForm.timeControl.trim() || 'Rapid',
+        mode: (createTournamentForm.mode || 'IN_PERSON'),
         image: createTournamentForm.image.trim() || undefined,
         rules: createTournamentForm.rules.trim() || undefined,
       };
-
-      if (!payload.organizerId) {
-        throw new Error('Please select an organizer');
-      }
 
       if (!payload.startDate || !payload.endDate || !payload.registrationEnd) {
         throw new Error('Please provide start, end, and registration end dates');
@@ -542,23 +543,35 @@ export default function AdminDashboard() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(
-          data?.details?.formErrors?.[0] || data.error || 'Failed to create tournament',
-        );
+        const details = data?.details || {};
+        const formErr = Array.isArray(details.formErrors) && details.formErrors[0];
+        let firstFieldErr = '';
+        if (details.fieldErrors && typeof details.fieldErrors === 'object') {
+          for (const key of Object.keys(details.fieldErrors)) {
+            const arr = details.fieldErrors[key];
+            if (Array.isArray(arr) && arr.length > 0) {
+              firstFieldErr = arr[0];
+              break;
+            }
+          }
+        }
+        const message = formErr || firstFieldErr || data.error || 'Failed to create tournament';
+        throw new Error(message);
       }
 
       setCreateTournamentForm({
         name: '',
         description: '',
-        organizerId: createTournamentForm.organizerId,
         startDate: '',
         endDate: '',
         registrationEnd: '',
         maxParticipants: '',
         entryFee: '',
+        registrationFree: createTournamentForm.registrationFree,
         prizePool: '',
         format: createTournamentForm.format,
         timeControl: createTournamentForm.timeControl,
+        mode: createTournamentForm.mode,
         image: '',
         rules: '',
       });
@@ -569,6 +582,54 @@ export default function AdminDashboard() {
       setCreateTournamentError(err.message || 'Failed to create tournament');
     } finally {
       setCreateTournamentLoading(false);
+    }
+  };
+
+  const setCreateGameField = (tournamentId, field, value) => {
+    setCreateGameForms((prev) => ({
+      ...prev,
+      [tournamentId]: {
+        whiteUserId: prev[tournamentId]?.whiteUserId || '',
+        blackUserId: prev[tournamentId]?.blackUserId || '',
+        ...prev[tournamentId],
+        [field]: value,
+        error: '',
+      },
+    }));
+  };
+
+  const handleCreateOnlineGame = async (tournamentId) => {
+    if (!token) return;
+    const form = createGameForms[tournamentId] || {};
+    const whiteUserId = form.whiteUserId?.trim();
+    const blackUserId = form.blackUserId?.trim();
+    if (!whiteUserId || !blackUserId) {
+      setCreateGameForms((prev) => ({
+        ...prev,
+        [tournamentId]: { ...form, error: 'Select both White and Black players.' },
+      }));
+      return;
+    }
+
+    setCreateGameForms((prev) => ({ ...prev, [tournamentId]: { ...form, creating: true, error: '' } }));
+    try {
+      const res = await fetch(`/api/admin/tournaments/${tournamentId}/games`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ whiteUserId, blackUserId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to create game');
+      const gameId = data?.game?.id || data?.id;
+      setCreateGameForms((prev) => ({
+        ...prev,
+        [tournamentId]: { whiteUserId: '', blackUserId: '', creating: false, error: '', lastGameId: gameId },
+      }));
+    } catch (e) {
+      setCreateGameForms((prev) => ({
+        ...prev,
+        [tournamentId]: { ...form, creating: false, error: e.message || 'Failed to create game' },
+      }));
     }
   };
 
@@ -1208,7 +1269,7 @@ export default function AdminDashboard() {
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">{tournament.name}</h3>
                           <p className="text-sm text-gray-600">
-                            Organized by {tournament.organizer?.user?.name || 'Unknown'}
+                            Organized by {tournament.organizer?.name || 'Unknown'}
                           </p>
                         </div>
                         <Badge variant={statusVariantMap[tournament.status] || 'secondary'}>
@@ -1235,7 +1296,73 @@ export default function AdminDashboard() {
                             {tournament.entryFee ? formatCurrency(tournament.entryFee, 'USD') : 'Free'}
                           </p>
                         </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-400">Mode</p>
+                          <p className="text-sm text-gray-700">{tournament.mode || 'IN_PERSON'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-400">Registration</p>
+                          <p className="text-sm text-gray-700">{tournament.registrationFree ? 'Free' : (tournament.entryFee ? formatCurrency(tournament.entryFee, 'USD') : 'Free')}</p>
+                        </div>
                       </div>
+
+                      {tournament.mode === 'ONLINE' && (
+                        <div className="mt-5 rounded-xl border border-purple-200/60 bg-purple-50/40 p-4">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-800">Create online game</p>
+                            {createGameForms[tournament.id]?.lastGameId && (
+                              <Link
+                                className="text-sm text-purple-700 underline"
+                                href={`/play/${createGameForms[tournament.id].lastGameId}`}
+                              >
+                                Open last game »
+                              </Link>
+                            )}
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1">
+                              <Label htmlFor={`white-${tournament.id}`}>White player</Label>
+                              <select
+                                id={`white-${tournament.id}`}
+                                className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                value={createGameForms[tournament.id]?.whiteUserId || ''}
+                                onChange={(e) => setCreateGameField(tournament.id, 'whiteUserId', e.target.value)}
+                              >
+                                <option value="">Select student (White)</option>
+                                {students.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor={`black-${tournament.id}`}>Black player</Label>
+                              <select
+                                id={`black-${tournament.id}`}
+                                className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                value={createGameForms[tournament.id]?.blackUserId || ''}
+                                onChange={(e) => setCreateGameField(tournament.id, 'blackUserId', e.target.value)}
+                              >
+                                <option value="">Select student (Black)</option>
+                                {students.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          {createGameForms[tournament.id]?.error && (
+                            <p className="mt-2 text-sm text-red-600">{createGameForms[tournament.id].error}</p>
+                          )}
+                          <div className="mt-3">
+                            <Button
+                              size="sm"
+                              disabled={!!createGameForms[tournament.id]?.creating}
+                              onClick={() => handleCreateOnlineGame(tournament.id)}
+                            >
+                              {createGameForms[tournament.id]?.creating ? 'Creating game...' : 'Create game'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </CardContent>
@@ -1269,25 +1396,7 @@ export default function AdminDashboard() {
                         required
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tournament-organizer">Organizer</Label>
-                      <select
-                        id="tournament-organizer"
-                        className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        value={createTournamentForm.organizerId}
-                        onChange={(event) => handleTournamentFieldChange('organizerId', event.target.value)}
-                        required
-                      >
-                        <option value="">Select an approved trainer</option>
-                        {trainers
-                          .filter((trainer) => trainer.approved)
-                          .map((trainer) => (
-                            <option key={trainer.id} value={trainer.id}>
-                              {trainer.user?.name || 'Unknown'}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                    {/* Organizer is implicitly the current admin */}
 
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div className="space-y-2">
@@ -1343,6 +1452,7 @@ export default function AdminDashboard() {
                           min="0"
                           value={createTournamentForm.entryFee}
                           onChange={(event) => handleTournamentFieldChange('entryFee', event.target.value)}
+                          disabled={createTournamentForm.registrationFree}
                           placeholder="0"
                         />
                       </div>
@@ -1358,6 +1468,20 @@ export default function AdminDashboard() {
                           placeholder="500"
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tournament-registration-free" className="inline-flex items-center gap-2">
+                        <input
+                          id="tournament-registration-free"
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={!!createTournamentForm.registrationFree}
+                          onChange={(e) => handleTournamentFieldChange('registrationFree', e.target.checked)}
+                        />
+                        Registration is free
+                      </Label>
+                      <p className="text-xs text-gray-500">When enabled, entry fee will be set to $0.</p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -1379,6 +1503,19 @@ export default function AdminDashboard() {
                           placeholder="Rapid"
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tournament-mode">Mode</Label>
+                      <select
+                        id="tournament-mode"
+                        className="h-10 w-full rounded-xl border border-purple-200/60 bg-white/70 px-3 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        value={createTournamentForm.mode}
+                        onChange={(event) => handleTournamentFieldChange('mode', event.target.value)}
+                      >
+                        <option value="IN_PERSON">In person</option>
+                        <option value="ONLINE">Online</option>
+                      </select>
                     </div>
 
                     <div className="space-y-2">

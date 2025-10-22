@@ -186,6 +186,21 @@ chess/
 - GET /api/tournaments/[id] — Get tournament details
 - POST /api/tournaments/[id]/register — Register for tournament
 
+Online vs In-person:
+
+- Tournaments now have a `mode`: `IN_PERSON` (default) or `ONLINE`.
+- Admins can select the mode when creating a tournament.
+
+Online play APIs:
+
+- POST /api/admin/tournaments/[id]/games — Admin create an online game for a tournament `{ whiteUserId, blackUserId, round? }`
+- GET /api/games/[id] — Fetch game state (FEN, PGN, turn, status)
+- POST /api/games/[id]/move — Submit a move `{ from, to, promotion? }` (validated server-side)
+
+Online play UI:
+
+- Visit `/play/[gameId]` to open the game room with a live board.
+
 ### Lessons
 
 - GET /api/lessons — List lessons
