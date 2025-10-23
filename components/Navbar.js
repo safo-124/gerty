@@ -134,6 +134,8 @@ export default function Navbar() {
                     <Link href="/dashboard/admin/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Puzzles</Link>
                     <Link href="/dashboard/admin/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Resources</Link>
                     <Link href="/dashboard/admin/blog" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Blog</Link>
+                    <Link href="/dashboard/admin/settings/site" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Site Settings</Link>
+                    <Link href="/dashboard/admin/analytics/site" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Site Analytics</Link>
                     <Link href="/dashboard/admin/analytics/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Puzzles Analytics</Link>
                   </div>
                 )}
@@ -246,6 +248,8 @@ export default function Navbar() {
                       <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
                       <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
                       <NavLink href="/dashboard/admin/blog" onClick={closeMenu}>Admin Blog</NavLink>
+                      <NavLink href="/dashboard/admin/settings/site" onClick={closeMenu}>Site Settings</NavLink>
+                      <NavLink href="/dashboard/admin/analytics/site" onClick={closeMenu}>Site Analytics</NavLink>
                       <NavLink href="/dashboard/admin/analytics/puzzles" onClick={closeMenu}>Puzzles Analytics</NavLink>
                     </div>
                   )}
