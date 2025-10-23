@@ -1,11 +1,22 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
 
 export default function HomePage() {
+  const [latestPosts, setLatestPosts] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/blog?limit=3')
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((d) => { if (!cancelled) setLatestPosts(d.items || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -47,6 +58,45 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Latest from the Blog */}
+      <section className="py-16 bg-gradient-to-b from-pink-50 to-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <Badge variant="outline" className="mb-3 text-sm px-4 py-1">Updates</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Latest from the Blog</h2>
+            </div>
+            <Link href="/blog" className="text-purple-700 hover:underline">View all</Link>
+          </div>
+          {latestPosts.length === 0 ? (
+            <p className="text-gray-600">No posts yet. Check back soon.</p>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {latestPosts.map((post) => (
+                <Link key={post.slug} href={`/blog/${post.slug}`} className="group rounded-2xl border bg-white shadow hover:shadow-lg transition overflow-hidden">
+                  {post.coverImage && (
+                    <div className="relative h-40 w-full">
+                      <Image src={post.coverImage} alt="" fill className="object-cover" />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold group-hover:text-purple-700">{post.title}</h3>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {post.category && <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{post.category}</span>}
+                      {Array.isArray(post.tags) && post.tags.slice(0,1).map((t) => (
+                        <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-700">#{t}</span>
+                      ))}
+                    </div>
+                    {post.excerpt && <p className="mt-2 text-gray-600 line-clamp-2">{post.excerpt}</p>}
+                    <div className="mt-3 text-xs text-gray-500">{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ''}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -93,6 +93,7 @@ export default function Navbar() {
                   <Link href="/tournaments" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Tournaments</Link>
                   <Link href="/store" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Store</Link>
                   <Link href="/fund-me" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Fund Me</Link>
+                  <Link href="/blog" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Blog</Link>
                 </div>
               )}
             </div>
@@ -132,6 +133,7 @@ export default function Navbar() {
                     <Link href="/dashboard/admin" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Console</Link>
                     <Link href="/dashboard/admin/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Puzzles</Link>
                     <Link href="/dashboard/admin/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Resources</Link>
+                    <Link href="/dashboard/admin/blog" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Blog</Link>
                     <Link href="/dashboard/admin/analytics/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Puzzles Analytics</Link>
                   </div>
                 )}
@@ -206,6 +208,7 @@ export default function Navbar() {
                   <NavLink href="/tournaments" onClick={closeMenu}>Tournaments</NavLink>
                   <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
                   <NavLink href="/fund-me" onClick={closeMenu}>Fund Me</NavLink>
+                  <NavLink href="/blog" onClick={closeMenu}>Blog</NavLink>
                 </div>
               )}
 
@@ -242,6 +245,7 @@ export default function Navbar() {
                       <NavLink href="/dashboard/admin" onClick={closeMenu}>Admin Console</NavLink>
                       <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
                       <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
+                      <NavLink href="/dashboard/admin/blog" onClick={closeMenu}>Admin Blog</NavLink>
                       <NavLink href="/dashboard/admin/analytics/puzzles" onClick={closeMenu}>Puzzles Analytics</NavLink>
                     </div>
                   )}
