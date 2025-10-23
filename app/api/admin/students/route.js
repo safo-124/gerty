@@ -31,6 +31,7 @@ export async function GET(request) {
             currentRating: true,
             targetRating: true,
             preferredStyle: true,
+            country: true,
           },
         },
       },

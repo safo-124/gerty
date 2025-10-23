@@ -7,7 +7,8 @@ export async function GET(request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
     const search = searchParams.get('search') || '';
-    const specialty = searchParams.get('specialty') || '';
+  const specialty = searchParams.get('specialty') || '';
+  const country = (searchParams.get('country') || '').toUpperCase();
     const minRating = searchParams.get('minRating');
     const maxRate = searchParams.get('maxRate');
     const featured = searchParams.get('featured') === 'true';
@@ -32,6 +33,7 @@ export async function GET(request) {
         hourlyRate: { lte: parseFloat(maxRate) },
       }),
       ...(featured && { featured: true }),
+      ...(country && { country }),
     };
 
     // Get trainers with pagination

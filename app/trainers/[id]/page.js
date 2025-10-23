@@ -7,6 +7,7 @@ import Card from '@/components/ui/CardOld';
 import Button from '@/components/ui/ButtonOld';
 import { PageLoader } from '@/components/ui/Loading';
 import Link from 'next/link';
+import { COUNTRIES, countryCodeToFlagEmoji } from '@/lib/countries';
 
 export default function TrainerProfilePage() {
   const params = useParams();
@@ -77,6 +78,16 @@ export default function TrainerProfilePage() {
                         {trainer.totalStudents > 0 && (
                           <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
                             <span className="font-bold text-gray-900 dark:text-white">{trainer.totalStudents} students</span>
+                          </div>
+                        )}
+                        {trainer.country && (
+                          <div className="flex items-center bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                            <span className="mr-1" title={trainer.country}>
+                              {countryCodeToFlagEmoji(trainer.country)}
+                            </span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {COUNTRIES.find(c => c.code === trainer.country)?.name || trainer.country}
+                            </span>
                           </div>
                         )}
                       </div>

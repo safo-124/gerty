@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { countryCodeToFlagEmoji } from '@/lib/countries';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1099,7 +1100,12 @@ export default function AdminDashboard() {
                     {filteredTrainers.map((trainer) => (
                       <tr key={trainer.id} className="border-b border-gray-100">
                         <td className="px-4 py-4">
-                          <div className="font-medium text-gray-900">{trainer.user?.name || 'Unknown'}</div>
+                          <div className="font-medium text-gray-900">
+                            {trainer.country ? (
+                              <span className="mr-1" title={trainer.country}>{countryCodeToFlagEmoji(trainer.country)}</span>
+                            ) : null}
+                            {trainer.user?.name || 'Unknown'}
+                          </div>
                           <div className="text-xs text-gray-500">{trainer.user?.email}</div>
                         </td>
                         <td className="px-4 py-4 text-gray-700">{trainer.title || '—'}</td>
@@ -1163,7 +1169,12 @@ export default function AdminDashboard() {
                     {students.map((student) => (
                       <tr key={student.id} className="border-b border-gray-100">
                         <td className="px-4 py-4">
-                          <div className="font-medium text-gray-900">{student.name}</div>
+                          <div className="font-medium text-gray-900">
+                            {student.studentProfile?.country ? (
+                              <span className="mr-1" title={student.studentProfile.country}>{countryCodeToFlagEmoji(student.studentProfile.country)}</span>
+                            ) : null}
+                            {student.name}
+                          </div>
                           <div className="text-xs text-gray-500">{student.email}</div>
                         </td>
                         <td className="px-4 py-4 text-gray-700">

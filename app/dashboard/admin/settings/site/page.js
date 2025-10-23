@@ -7,7 +7,12 @@ export default function AdminSiteSettingsPage() {
   const { user, token, loading } = useAuth();
   const [form, setForm] = useState({
     facebookUrl: '', twitterUrl: '', instagramUrl: '', youtubeUrl: '', linkedinUrl: '', tiktokUrl: '', githubUrl: '',
-    contactEmail: '', footerText: ''
+    contactEmail: '', footerText: '',
+    homepageLiveEnabled: false,
+    homepageLiveCount: 2,
+    homepageLiveRotationSeconds: 300,
+    homepageLiveTournamentOnly: true,
+    homepageLiveTournamentIds: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -26,6 +31,11 @@ export default function AdminSiteSettingsPage() {
           githubUrl: d.settings.githubUrl || '',
           contactEmail: d.settings.contactEmail || '',
           footerText: d.settings.footerText || '',
+          homepageLiveEnabled: !!d.settings.homepageLiveEnabled,
+          homepageLiveCount: Number(d.settings.homepageLiveCount ?? 2),
+          homepageLiveRotationSeconds: Number(d.settings.homepageLiveRotationSeconds ?? 300),
+          homepageLiveTournamentOnly: !!d.settings.homepageLiveTournamentOnly,
+          homepageLiveTournamentIds: Array.isArray(d.settings.homepageLiveTournamentIds) ? d.settings.homepageLiveTournamentIds.join(',') : '',
         });
       })
       .catch(() => {});
@@ -41,7 +51,14 @@ export default function AdminSiteSettingsPage() {
       const res = await fetch('/api/admin/settings/site', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          homepageLiveCount: Number(form.homepageLiveCount || 2),
+          homepageLiveRotationSeconds: Number(form.homepageLiveRotationSeconds || 300),
+          homepageLiveTournamentIds: typeof form.homepageLiveTournamentIds === 'string'
+            ? form.homepageLiveTournamentIds.split(',').map((s) => s.trim()).filter(Boolean)
+            : [],
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -55,7 +72,7 @@ export default function AdminSiteSettingsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Site Settings</h1>
-      <form onSubmit={save} className="grid md:grid-cols-2 gap-6">
+  <form onSubmit={save} className="grid md:grid-cols-2 gap-6">
         {[
           ['facebookUrl', 'Facebook URL'],
           ['twitterUrl', 'X (Twitter) URL'],
@@ -74,6 +91,31 @@ export default function AdminSiteSettingsPage() {
         <div className="md:col-span-2">
           <label className="block text-sm text-gray-600 mb-1">Footer Text</label>
           <textarea rows={3} className="w-full rounded-lg border p-3" value={form.footerText} onChange={(e) => setForm({ ...form, footerText: e.target.value })} />
+        </div>
+        <div className="md:col-span-2 border-t pt-4">
+          <h2 className="text-xl font-semibold mb-3">Homepage Live Spotlight</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={!!form.homepageLiveEnabled} onChange={(e) => setForm({ ...form, homepageLiveEnabled: e.target.checked })} />
+              <span>Enable live spotlight</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={!!form.homepageLiveTournamentOnly} onChange={(e) => setForm({ ...form, homepageLiveTournamentOnly: e.target.checked })} />
+              <span>Only show when tournaments are online</span>
+            </label>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Number of matches to show</label>
+              <input type="number" min={1} max={6} className="w-full rounded-lg border p-3" value={form.homepageLiveCount} onChange={(e) => setForm({ ...form, homepageLiveCount: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Rotation interval (seconds)</label>
+              <input type="number" min={30} max={3600} className="w-full rounded-lg border p-3" value={form.homepageLiveRotationSeconds} onChange={(e) => setForm({ ...form, homepageLiveRotationSeconds: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">Limit to Tournament IDs (comma-separated, optional)</label>
+              <input className="w-full rounded-lg border p-3" placeholder="tournamentId1,tournamentId2" value={form.homepageLiveTournamentIds} onChange={(e) => setForm({ ...form, homepageLiveTournamentIds: e.target.value })} />
+            </div>
+          </div>
         </div>
         <div className="md:col-span-2">
           <button disabled={saving} className="rounded-lg bg-purple-600 px-5 py-2 text-white hover:bg-purple-700 disabled:opacity-50">{saving ? 'Saving…' : 'Save Settings'}</button>

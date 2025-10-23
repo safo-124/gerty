@@ -101,8 +101,8 @@ export async function GET(request) {
     );
     const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
 
-    // Get student profile info
-    const { currentRating, targetRating, preferredStyle, goals } = user.studentProfile || {};
+  // Get student profile info
+  const { currentRating, targetRating, preferredStyle, goals, country } = user.studentProfile || {};
 
     // Calculate progress percentage (if target rating is set)
     let progressPercentage = 0;
@@ -129,6 +129,7 @@ export async function GET(request) {
       profile: {
         preferredStyle: preferredStyle || null,
         goals: goals || null,
+        country: country || null,
       },
     });
   } catch (error) {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
+import LiveSpotlight from '@/components/home/LiveSpotlight';
 
 export default function HomePage() {
   const [latestPosts, setLatestPosts] = useState([]);
@@ -60,6 +61,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+  {/* Live Spotlight (rotates every N seconds per admin settings) */}
+  <LiveSpotlight />
 
       {/* Latest from the Blog */}
       <section className="py-16 bg-gradient-to-b from-pink-50 to-white">

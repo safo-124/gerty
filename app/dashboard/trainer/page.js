@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DEFAULT_NOTIFICATION_PREFERENCE, withPreferenceDefaults } from '@/lib/reminders';
+import { COUNTRIES } from '@/lib/countries';
 
 export default function TrainerDashboard() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function TrainerDashboard() {
     rating: '',
     hourlyRate: '',
     specialties: '',
+    country: '',
   });
   const [showCreateLesson, setShowCreateLesson] = useState(false);
   const [lessonForm, setLessonForm] = useState({
@@ -129,6 +131,7 @@ export default function TrainerDashboard() {
           specialties: Array.isArray(statsData.profile?.specialties)
             ? statsData.profile.specialties.join(', ')
             : (statsData.profile?.specialties || ''),
+          country: statsData.profile?.country || '',
         });
 
         await fetchTrainingRequests(false);
@@ -1914,6 +1917,23 @@ export default function TrainerDashboard() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <select
+                      id="country"
+                      name="country"
+                      className="w-full rounded-lg border border-purple-200 bg-white/80 px-3 py-2 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      value={formData.country}
+                      onChange={handleFormChange}
+                    >
+                      <option value="">— Select country —</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500">We’ll show your flag on your profile and tournament games. Must be an ISO two-letter code; the dropdown ensures valid choices.</p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="specialties">Specialties (comma-separated)</Label>
                     <Input
                       id="specialties"
@@ -1947,6 +1967,7 @@ export default function TrainerDashboard() {
                         rating: stats?.profile?.rating || '',
                         hourlyRate: stats?.stats?.hourlyRate || '',
                         specialties: stats?.profile?.specialties?.join(', ') || '',
+                        country: stats?.profile?.country || '',
                       });
                       setSaveSuccess(false);
                       setSaveError(null);

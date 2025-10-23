@@ -116,6 +116,8 @@ model TrainerProfile {
   profileImage    String?
   coverImage      String?
   videoUrl        String?
+  // Optional ISO 3166-1 alpha-2 country code (e.g., "US", "GH")
+  country         String?
   
   // Stats
   totalStudents   Int      @default(0)
@@ -138,6 +140,8 @@ model StudentProfile {
   targetRating    Int?
   preferredStyle  String?  // e.g., "Aggressive", "Positional"
   goals           String?  @db.Text
+  // Optional ISO 3166-1 alpha-2 country code (e.g., "US", "GH")
+  country         String?
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -513,6 +517,12 @@ model SiteSettings {
   githubUrl    String?
   contactEmail String?
   footerText   String?
+  // Homepage live spotlight controls
+  homepageLiveEnabled           Boolean  @default(false)
+  homepageLiveCount             Int      @default(2)
+  homepageLiveRotationSeconds   Int      @default(300) // 5 minutes
+  homepageLiveTournamentOnly    Boolean  @default(true)
+  homepageLiveTournamentIds     String[]
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
 }

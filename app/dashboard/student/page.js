@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DEFAULT_NOTIFICATION_PREFERENCE, withPreferenceDefaults } from '@/lib/reminders';
+import { COUNTRIES } from '@/lib/countries';
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -50,6 +51,16 @@ export default function StudentDashboard() {
   const [notificationPreferencesSaving, setNotificationPreferencesSaving] = useState(false);
   const [notificationPreferencesError, setNotificationPreferencesError] = useState('');
   const [notificationPreferencesSuccess, setNotificationPreferencesSuccess] = useState('');
+  const [studentCountry, setStudentCountry] = useState('');
+  const [studentCountrySaving, setStudentCountrySaving] = useState(false);
+  const [studentCountryError, setStudentCountryError] = useState('');
+  const [studentCountrySuccess, setStudentCountrySuccess] = useState('');
+  const [studentForm, setStudentForm] = useState({
+    currentRating: '',
+    targetRating: '',
+    preferredStyle: '',
+    goals: '',
+  });
 
   const fetchAvailableLessons = useCallback(async (trainerId = '') => {
     if (!token) return;
@@ -241,6 +252,16 @@ export default function StudentDashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
+        // Initialize country from profile
+        const initialCountry = statsData?.profile?.country || '';
+        setStudentCountry((prev) => (prev || prev === '' ? initialCountry : initialCountry));
+        // Initialize student form fields
+        setStudentForm({
+          currentRating: statsData?.stats?.currentRating ?? '',
+          targetRating: statsData?.stats?.targetRating ?? '',
+          preferredStyle: statsData?.profile?.preferredStyle ?? '',
+          goals: statsData?.profile?.goals ?? '',
+        });
       }
 
       const lessonsRes = await fetch('/api/student/lessons?status=upcoming&limit=5', {
@@ -284,6 +305,72 @@ export default function StudentDashboard() {
       loadNotificationPreferences();
     }
   }, [user, token, fetchDashboardData, loadNotificationPreferences]);
+
+  const handleSaveStudentCountry = async () => {
+    if (!token) return;
+    setStudentCountrySaving(true);
+    setStudentCountryError('');
+    setStudentCountrySuccess('');
+    try {
+      const response = await fetch('/api/student/profile', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ country: studentCountry || '' }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setStudentCountrySuccess('Country updated');
+        setTimeout(() => setStudentCountrySuccess(''), 2500);
+        await fetchDashboardData();
+      } else {
+        setStudentCountryError(data.error || 'Failed to update country');
+      }
+    } catch (err) {
+      console.error('Update student country error:', err);
+      setStudentCountryError('Failed to update country');
+    } finally {
+      setStudentCountrySaving(false);
+    }
+  };
+
+  const handleStudentFormChange = (field, value) => {
+    setStudentForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveStudentProfile = async (e) => {
+    e.preventDefault();
+    if (!token) return;
+    setStudentCountryError('');
+    try {
+      const payload = {
+        currentRating: studentForm.currentRating !== '' ? Number(studentForm.currentRating) : undefined,
+        targetRating: studentForm.targetRating !== '' ? Number(studentForm.targetRating) : undefined,
+        preferredStyle: studentForm.preferredStyle || undefined,
+        goals: studentForm.goals || undefined,
+      };
+      const response = await fetch('/api/student/profile', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        await fetchDashboardData();
+      } else {
+        setStudentCountryError(data.error || 'Failed to update profile');
+      }
+    } catch (err) {
+      console.error('Update student profile error:', err);
+      setStudentCountryError('Failed to update profile');
+    }
+  };
 
   const handleRequestFormChange = (field, value) => {
     setRequestForm(prev => ({
@@ -1307,46 +1394,30 @@ export default function StudentDashboard() {
               <CardDescription>Update your learning profile</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleSaveStudentProfile}>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="currentRating">Current Rating (ELO)</Label>
-                    <Input
-                      id="currentRating"
-                      type="number"
-                      placeholder="1200"
-                      defaultValue={stats?.stats?.currentRating || ''}
-                    />
+                    <Input id="currentRating" type="number" placeholder="1200" value={studentForm.currentRating}
+                      onChange={(e) => handleStudentFormChange('currentRating', e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="targetRating">Target Rating</Label>
-                    <Input
-                      id="targetRating"
-                      type="number"
-                      placeholder="1800"
-                      defaultValue={stats?.stats?.targetRating || ''}
-                    />
+                    <Input id="targetRating" type="number" placeholder="1800" value={studentForm.targetRating}
+                      onChange={(e) => handleStudentFormChange('targetRating', e.target.value)} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="preferredStyle">Preferred Playing Style</Label>
-                  <Input
-                    id="preferredStyle"
-                    placeholder="e.g., Aggressive, Positional, Tactical"
-                    defaultValue={stats?.profile?.preferredStyle || ''}
-                  />
+                  <Input id="preferredStyle" placeholder="e.g., Aggressive, Positional, Tactical" value={studentForm.preferredStyle}
+                    onChange={(e) => handleStudentFormChange('preferredStyle', e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="goals">Your Chess Goals</Label>
-                  <textarea
-                    id="goals"
-                    rows={4}
-                    className="w-full px-3 py-2 rounded-lg bg-white/70 backdrop-blur-md border border-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-800"
-                    placeholder="What do you want to achieve in your chess journey?"
-                    defaultValue={stats?.profile?.goals || ''}
-                  />
+                  <textarea id="goals" rows={4} className="w-full px-3 py-2 rounded-lg bg-white/70 backdrop-blur-md border border-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-800" placeholder="What do you want to achieve in your chess journey?" value={studentForm.goals}
+                    onChange={(e) => handleStudentFormChange('goals', e.target.value)} />
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -1358,6 +1429,35 @@ export default function StudentDashboard() {
                   </Button>
                 </div>
               </form>
+
+              <div className="mt-6 space-y-2">
+                <Label htmlFor="student-country">Country</Label>
+                <select
+                  id="student-country"
+                  className="w-full rounded-lg border border-purple-200 bg-white/80 px-3 py-2 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  value={studentCountry}
+                  onChange={(e) => setStudentCountry(e.target.value)}
+                  disabled={studentCountrySaving}
+                >
+                  <option value="">— Select country —</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">Must be an ISO two-letter code; the dropdown ensures valid choices.</p>
+                {studentCountryError && (
+                  <div className="rounded-md border border-red-200 bg-red-50/80 px-3 py-2 text-xs text-red-700">{studentCountryError}</div>
+                )}
+                {studentCountrySuccess && (
+                  <div className="rounded-md border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-700">{studentCountrySuccess}</div>
+                )}
+                <div className="flex gap-3 pt-1">
+                  <Button type="button" variant="outline" onClick={() => setStudentCountry(stats?.profile?.country || '')} disabled={studentCountrySaving}>Reset</Button>
+                  <Button type="button" variant="gradient" onClick={handleSaveStudentCountry} disabled={studentCountrySaving}>
+                    {studentCountrySaving ? 'Saving...' : 'Save Country'}
+                  </Button>
+                </div>
+              </div>
 
               <div className="mt-8 border-t border-purple-100 pt-6 space-y-5">
                 <div>

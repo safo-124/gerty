@@ -108,6 +108,7 @@ export async function GET(request) {
         experience: user.trainerProfile.experience,
         rating: user.trainerProfile.rating,
         featured: user.trainerProfile.featured,
+        country: user.trainerProfile.country,
       },
     });
   } catch (error) {

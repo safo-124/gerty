@@ -36,6 +36,15 @@ export async function PATCH(request) {
       githubUrl: body.githubUrl ?? null,
       contactEmail: body.contactEmail ?? null,
       footerText: body.footerText ?? null,
+      homepageLiveEnabled: !!body.homepageLiveEnabled,
+      homepageLiveCount: Math.max(1, Math.min(6, Number(body.homepageLiveCount ?? 2))),
+      homepageLiveRotationSeconds: Math.max(30, Math.min(3600, Number(body.homepageLiveRotationSeconds ?? 300))),
+      homepageLiveTournamentOnly: !!body.homepageLiveTournamentOnly,
+      homepageLiveTournamentIds: Array.isArray(body.homepageLiveTournamentIds)
+        ? body.homepageLiveTournamentIds
+        : (typeof body.homepageLiveTournamentIds === 'string' && body.homepageLiveTournamentIds.trim().length)
+          ? body.homepageLiveTournamentIds.split(',').map((s) => s.trim()).filter(Boolean)
+          : [],
     };
 
     const settings = await prisma.siteSettings.upsert({

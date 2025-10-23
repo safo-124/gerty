@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import LoadingSpinner from '@/components/ui/Loading';
+import { COUNTRIES, countryCodeToFlagEmoji } from '@/lib/countries';
 
 export default function TrainersPage() {
   const [trainers, setTrainers] = useState([]);
@@ -18,6 +19,7 @@ export default function TrainersPage() {
     specialty: '',
     minRating: '',
     featured: false,
+    country: '',
   });
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 });
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +33,7 @@ export default function TrainersPage() {
         ...(filters.specialty && { specialty: filters.specialty }),
         ...(filters.minRating && { minRating: filters.minRating }),
         ...(filters.featured && { featured: 'true' }),
+        ...(filters.country && { country: filters.country }),
       });
 
       const response = await fetch(`/api/trainers?${params}`);
@@ -42,7 +45,7 @@ export default function TrainersPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.featured, filters.minRating, filters.search, filters.specialty, pagination.page]);
+  }, [filters.featured, filters.minRating, filters.search, filters.specialty, filters.country, pagination.page]);
 
   useEffect(() => {
     fetchTrainers();
@@ -124,6 +127,21 @@ export default function TrainersPage() {
                   </select>
                 </div>
 
+                {/* Country Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Country</label>
+                  <select
+                    value={filters.country}
+                    onChange={(e) => handleFilterChange('country', e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">All Countries</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Rating Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Minimum Rating</label>
@@ -163,7 +181,7 @@ export default function TrainersPage() {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
-                    setFilters({ search: '', specialty: '', minRating: '', featured: false });
+                    setFilters({ search: '', specialty: '', minRating: '', featured: false, country: '' });
                     setSearchTerm('');
                     setPagination(prev => ({ ...prev, page: 1 }));
                   }}
@@ -206,7 +224,7 @@ export default function TrainersPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setFilters({ search: '', specialty: '', minRating: '', featured: false });
+                      setFilters({ search: '', specialty: '', minRating: '', featured: false, country: '' });
                       setSearchTerm('');
                       setPagination(prev => ({ ...prev, page: 1 }));
                     }}
@@ -251,6 +269,11 @@ export default function TrainersPage() {
 
                         <div className="pt-14">
                           <CardTitle className="text-xl mb-1 group-hover:text-primary transition-colors">
+                            {trainer.country && (
+                              <span className="mr-1 align-[1px]" title={trainer.country}>
+                                {countryCodeToFlagEmoji(trainer.country)}
+                              </span>
+                            )}
                             {trainer.user.name}
                           </CardTitle>
                           {trainer.title && (

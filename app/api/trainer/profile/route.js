@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import { isValidCountryCode } from '@/lib/countries';
 
 export async function PUT(request) {
   try {
@@ -30,8 +31,18 @@ export async function PUT(request) {
       );
     }
 
-    // Parse request body
-    const body = await request.json();
+  // Parse request body and normalize/validate optional fields
+  const body = await request.json();
+    let normalizedCountry = undefined;
+    if (typeof body.country === 'string') {
+      const code = body.country.toUpperCase();
+      if (isValidCountryCode(code)) {
+        normalizedCountry = code;
+      } else if (body.country === '' || body.country === null) {
+        // Allow clearing
+        normalizedCountry = null;
+      }
+    }
 
     // Update trainer profile
     const updatedProfile = await prisma.trainerProfile.update({
@@ -49,6 +60,8 @@ export async function PUT(request) {
         profileImage: body.profileImage || user.trainerProfile.profileImage,
         coverImage: body.coverImage || user.trainerProfile.coverImage,
         videoUrl: body.videoUrl || user.trainerProfile.videoUrl,
+        // Only update if provided and valid; if omitted, keep previous
+        ...(normalizedCountry !== undefined ? { country: normalizedCountry } : {}),
       },
     });
 
