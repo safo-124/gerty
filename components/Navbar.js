@@ -30,6 +30,10 @@ const NavLink = ({ href, children, onClick }) => {
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [openExplore, setOpenExplore] = useState(false);
+  const [openWatch, setOpenWatch] = useState(false);
+  const [openLearn, setOpenLearn] = useState(false);
+  const [openAdmin, setOpenAdmin] = useState(false);
 
   const dashboardHref = user
     ? user.role === 'TRAINER'
@@ -56,25 +60,82 @@ export default function Navbar() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-4">
             <NavLink href="/play">Play</NavLink>
-            <NavLink href="/live">Live</NavLink>
-            <NavLink href="/leaderboard">Leaderboard</NavLink>
-            <NavLink href="/tournaments">Tournaments</NavLink>
-            <NavLink href="/fund-me">Fund Me</NavLink>
-            <NavLink href="/store">Store</NavLink>
-            <NavLink href="/trainers">Trainers</NavLink>
+
+            {/* Watch dropdown: Live + Leaderboard */}
+            <div
+              className="relative"
+              onMouseEnter={() => setOpenWatch(true)}
+              onMouseLeave={() => setOpenWatch(false)}
+            >
+              <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+                Watch ▾
+              </button>
+              {openWatch && (
+                <div className="absolute z-50 mt-2 w-44 rounded-xl border bg-white p-2 shadow-xl">
+                  <Link href="/live" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Live</Link>
+                  <Link href="/leaderboard" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Leaderboard</Link>
+                </div>
+              )}
+            </div>
+
+            {/* Explore dropdown: Trainers, Tournaments, Store, Fund Me */}
+            <div
+              className="relative"
+              onMouseEnter={() => setOpenExplore(true)}
+              onMouseLeave={() => setOpenExplore(false)}
+            >
+              <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+                Explore ▾
+              </button>
+              {openExplore && (
+                <div className="absolute z-50 mt-2 w-52 rounded-xl border bg-white p-2 shadow-xl">
+                  <Link href="/trainers" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Trainers</Link>
+                  <Link href="/tournaments" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Tournaments</Link>
+                  <Link href="/store" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Store</Link>
+                  <Link href="/fund-me" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Fund Me</Link>
+                </div>
+              )}
+            </div>
+
+            {/* Learn dropdown (students) */}
             {user?.role === 'STUDENT' && (
-              <>
-                <NavLink href="/puzzles">Puzzles</NavLink>
-                <NavLink href="/resources">Resources</NavLink>
-                <NavLink href="/dashboard/student/analytics/puzzles">Analytics</NavLink>
-              </>
+              <div
+                className="relative"
+                onMouseEnter={() => setOpenLearn(true)}
+                onMouseLeave={() => setOpenLearn(false)}
+              >
+                <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+                  Learn ▾
+                </button>
+                {openLearn && (
+                  <div className="absolute z-50 mt-2 w-48 rounded-xl border bg-white p-2 shadow-xl">
+                    <Link href="/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Puzzles</Link>
+                    <Link href="/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Resources</Link>
+                    <Link href="/dashboard/student/analytics/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Analytics</Link>
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Admin dropdown */}
             {user?.role === 'ADMIN' && (
-              <>
-                <NavLink href="/dashboard/admin/puzzles">Admin Puzzles</NavLink>
-                <NavLink href="/dashboard/admin/resources">Admin Resources</NavLink>
-                <NavLink href="/dashboard/admin/analytics/puzzles">Puzzles Analytics</NavLink>
-              </>
+              <div
+                className="relative"
+                onMouseEnter={() => setOpenAdmin(true)}
+                onMouseLeave={() => setOpenAdmin(false)}
+              >
+                <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+                  Admin ▾
+                </button>
+                {openAdmin && (
+                  <div className="absolute z-50 mt-2 w-56 rounded-xl border bg-white p-2 shadow-xl">
+                    <Link href="/dashboard/admin" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Console</Link>
+                    <Link href="/dashboard/admin/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Puzzles</Link>
+                    <Link href="/dashboard/admin/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Resources</Link>
+                    <Link href="/dashboard/admin/analytics/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Puzzles Analytics</Link>
+                  </div>
+                )}
+              </div>
             )}
           </nav>
 
@@ -117,24 +178,73 @@ export default function Navbar() {
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-2">
               <NavLink href="/play" onClick={closeMenu}>Play</NavLink>
-              <NavLink href="/live" onClick={closeMenu}>Live</NavLink>
-              <NavLink href="/leaderboard" onClick={closeMenu}>Leaderboard</NavLink>
-              <NavLink href="/tournaments" onClick={closeMenu}>Tournaments</NavLink>
-              <NavLink href="/fund-me" onClick={closeMenu}>Fund Me</NavLink>
-              <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
-              <NavLink href="/trainers" onClick={closeMenu}>Trainers</NavLink>
+
+              {/* Watch collapsible */}
+              <button
+                className="text-left rounded-xl px-2 py-1 text-sm font-medium text-gray-700"
+                onClick={() => setOpenWatch((v) => !v)}
+              >
+                Watch {openWatch ? '▴' : '▾'}
+              </button>
+              {openWatch && (
+                <div className="ml-3 flex flex-col gap-1">
+                  <NavLink href="/live" onClick={closeMenu}>Live</NavLink>
+                  <NavLink href="/leaderboard" onClick={closeMenu}>Leaderboard</NavLink>
+                </div>
+              )}
+
+              {/* Explore collapsible */}
+              <button
+                className="text-left rounded-xl px-2 py-1 text-sm font-medium text-gray-700"
+                onClick={() => setOpenExplore((v) => !v)}
+              >
+                Explore {openExplore ? '▴' : '▾'}
+              </button>
+              {openExplore && (
+                <div className="ml-3 flex flex-col gap-1">
+                  <NavLink href="/trainers" onClick={closeMenu}>Trainers</NavLink>
+                  <NavLink href="/tournaments" onClick={closeMenu}>Tournaments</NavLink>
+                  <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
+                  <NavLink href="/fund-me" onClick={closeMenu}>Fund Me</NavLink>
+                </div>
+              )}
+
+              {/* Student Learn collapsible */}
               {user?.role === 'STUDENT' && (
                 <>
-                  <NavLink href="/puzzles" onClick={closeMenu}>Puzzles</NavLink>
-                  <NavLink href="/resources" onClick={closeMenu}>Resources</NavLink>
-                  <NavLink href="/dashboard/student/analytics/puzzles" onClick={closeMenu}>Analytics</NavLink>
+                  <button
+                    className="text-left rounded-xl px-2 py-1 text-sm font-medium text-gray-700"
+                    onClick={() => setOpenLearn((v) => !v)}
+                  >
+                    Learn {openLearn ? '▴' : '▾'}
+                  </button>
+                  {openLearn && (
+                    <div className="ml-3 flex flex-col gap-1">
+                      <NavLink href="/puzzles" onClick={closeMenu}>Puzzles</NavLink>
+                      <NavLink href="/resources" onClick={closeMenu}>Resources</NavLink>
+                      <NavLink href="/dashboard/student/analytics/puzzles" onClick={closeMenu}>Analytics</NavLink>
+                    </div>
+                  )}
                 </>
               )}
+
+              {/* Admin collapsible */}
               {user?.role === 'ADMIN' && (
                 <>
-                  <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
-                  <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
-                  <NavLink href="/dashboard/admin/analytics/puzzles" onClick={closeMenu}>Puzzles Analytics</NavLink>
+                  <button
+                    className="text-left rounded-xl px-2 py-1 text-sm font-medium text-gray-700"
+                    onClick={() => setOpenAdmin((v) => !v)}
+                  >
+                    Admin {openAdmin ? '▴' : '▾'}
+                  </button>
+                  {openAdmin && (
+                    <div className="ml-3 flex flex-col gap-1">
+                      <NavLink href="/dashboard/admin" onClick={closeMenu}>Admin Console</NavLink>
+                      <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
+                      <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
+                      <NavLink href="/dashboard/admin/analytics/puzzles" onClick={closeMenu}>Puzzles Analytics</NavLink>
+                    </div>
+                  )}
                 </>
               )}
               <div className="h-px w-full bg-purple-200/60 my-2" />
