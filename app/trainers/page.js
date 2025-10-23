@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import LoadingSpinner from '@/components/ui/Loading';
 import { COUNTRIES, countryCodeToFlagEmoji } from '@/lib/countries';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function TrainersPage() {
   const [trainers, setTrainers] = useState([]);
@@ -23,18 +24,25 @@ export default function TrainersPage() {
   });
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 });
   const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const initializedRef = useRef(false);
+
+  const buildParams = (f, pageNum) => {
+    const params = new URLSearchParams({ page: String(pageNum) });
+    if (f.search) params.set('search', f.search);
+    if (f.specialty) params.set('specialty', f.specialty);
+    if (f.minRating) params.set('minRating', f.minRating);
+    if (f.featured) params.set('featured', 'true');
+    if (f.country) params.set('country', f.country);
+    return params;
+  };
 
   const fetchTrainers = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        ...(filters.search && { search: filters.search }),
-        ...(filters.specialty && { specialty: filters.specialty }),
-        ...(filters.minRating && { minRating: filters.minRating }),
-        ...(filters.featured && { featured: 'true' }),
-        ...(filters.country && { country: filters.country }),
-      });
+      const params = buildParams(filters, pagination.page);
 
       const response = await fetch(`/api/trainers?${params}`);
       const data = await response.json();
@@ -45,7 +53,47 @@ export default function TrainersPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.featured, filters.minRating, filters.search, filters.specialty, filters.country, pagination.page]);
+  }, [filters, pagination.page]);
+
+  // Initialize filters from URL and keep in sync when navigating back/forward
+  useEffect(() => {
+    const urlParams = new URLSearchParams(search?.toString() || '');
+    const parsed = {
+      search: urlParams.get('search') || '',
+      specialty: urlParams.get('specialty') || '',
+      minRating: urlParams.get('minRating') || '',
+      featured: (urlParams.get('featured') || '') === 'true',
+      country: (urlParams.get('country') || '').toUpperCase(),
+    };
+    const pageFromUrl = parseInt(urlParams.get('page') || '1', 10) || 1;
+
+    const differs =
+      parsed.search !== filters.search ||
+      parsed.specialty !== filters.specialty ||
+      parsed.minRating !== filters.minRating ||
+      parsed.featured !== filters.featured ||
+      parsed.country !== filters.country ||
+      pageFromUrl !== pagination.page;
+
+    if (differs) {
+      setFilters(parsed);
+      setSearchTerm(parsed.search);
+      setPagination(prev => ({ ...prev, page: pageFromUrl }));
+    }
+    if (!initializedRef.current) initializedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  // Sync state to URL when filters or page change
+  useEffect(() => {
+    if (!initializedRef.current) return;
+    const params = buildParams(filters, pagination.page);
+    const next = params.toString();
+    const current = search?.toString() || '';
+    if (next !== current) {
+      router.replace(`${pathname}?${next}`);
+    }
+  }, [filters, pagination.page, pathname, router, search]);
 
   useEffect(() => {
     fetchTrainers();
@@ -236,12 +284,31 @@ export default function TrainersPage() {
             ) : (
               <>
                 {/* Results Count */}
-                <div className="mb-6 flex items-center justify-between">
+                <div className="mb-2 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
                     Showing <span className="font-semibold text-foreground">{trainers.length}</span> of{' '}
                     <span className="font-semibold text-foreground">{pagination.total}</span> trainers
                   </p>
                 </div>
+
+                {/* Active Country Tag */}
+                {filters.country && (
+                  <div className="mb-6">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs text-gray-700 dark:text-gray-200">
+                      <span>{countryCodeToFlagEmoji(filters.country)}</span>
+                      <span>
+                        {COUNTRIES.find(c => c.code === filters.country)?.name || filters.country}
+                      </span>
+                      <button
+                        aria-label="Clear country filter"
+                        className="ml-1 rounded-full px-1 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        onClick={() => handleFilterChange('country', '')}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                )}
 
                 {/* Trainers Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
