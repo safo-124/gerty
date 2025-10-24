@@ -16,6 +16,43 @@ export default function LivePlayPage({ params }) {
   const [tick, setTick] = useState(0);
   const [legalTargets, setLegalTargets] = useState([]);
   const [clock, setClock] = useState(null);
+  const [admin, setAdmin] = useState(false);
+
+  function computeCapturedFromFen(fen) {
+    try {
+      if (!fen) return { byWhite: [], byBlack: [] };
+      const placement = String(fen).split(' ')[0] || '';
+      const initWhite = { P:8, N:2, B:2, R:2, Q:1, K:1 };
+      const initBlack = { p:8, n:2, b:2, r:2, q:1, k:1 };
+      const curWhite = { P:0, N:0, B:0, R:0, Q:0, K:0 };
+      const curBlack = { p:0, n:0, b:0, r:0, q:0, k:0 };
+      for (const ch of placement) {
+        if (/[PNBRQK]/.test(ch)) curWhite[ch]++;
+        else if (/[pnbrqk]/.test(ch)) curBlack[ch]++;
+      }
+      const missingBlack = {
+        p: Math.max(0, initBlack.p - curBlack.p),
+        n: Math.max(0, initBlack.n - curBlack.n),
+        b: Math.max(0, initBlack.b - curBlack.b),
+        r: Math.max(0, initBlack.r - curBlack.r),
+        q: Math.max(0, initBlack.q - curBlack.q),
+      };
+      const missingWhite = {
+        P: Math.max(0, initWhite.P - curWhite.P),
+        N: Math.max(0, initWhite.N - curWhite.N),
+        B: Math.max(0, initWhite.B - curWhite.B),
+        R: Math.max(0, initWhite.R - curWhite.R),
+        Q: Math.max(0, initWhite.Q - curWhite.Q),
+      };
+      const blackSymbols = { p:'♟', n:'♞', b:'♝', r:'♜', q:'♛' };
+      const whiteSymbols = { P:'♙', N:'♘', B:'♗', R:'♖', Q:'♕' };
+      const orderBlack = ['q','r','b','n','p'];
+      const orderWhite = ['Q','R','B','N','P'];
+      const byWhite = orderBlack.flatMap((k) => Array(missingBlack[k] || 0).fill(blackSymbols[k]));
+      const byBlack = orderWhite.flatMap((k) => Array(missingWhite[k] || 0).fill(whiteSymbols[k]));
+      return { byWhite, byBlack };
+    } catch { return { byWhite: [], byBlack: [] }; }
+  }
 
   const fen = match?.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
   const gameOver = match && match.status !== 'ONGOING';
@@ -60,8 +97,12 @@ export default function LivePlayPage({ params }) {
     load();
     const int = setInterval(load, 1500);
     const sec = setInterval(() => setTick((t) => t + 1), 1000);
+    try {
+      const a = search.get('admin');
+      if (a === '1' || a === 'true') setAdmin(true);
+    } catch {}
     return () => { clearInterval(int); clearInterval(sec); };
-  }, [load]);
+  }, [load, search]);
 
   // Clock accounting when we detect a new move (lastMoveAt changes)
   const matchLastAt = match?.lastMoveAt;
@@ -187,6 +228,22 @@ export default function LivePlayPage({ params }) {
     }
   }, [id]);
 
+  const captures = useMemo(() => computeCapturedFromFen(fen), [fen]);
+
+  async function resetAll() {
+    if (!admin) return;
+    if (!confirm('Reset ALL live matches and tournament games to starting position?')) return;
+    try {
+      const res = await fetch('/api/admin/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset');
+      alert(`Reset done. Live matches: ${data.counts?.live ?? 0}, tournament games: ${data.counts?.games ?? 0}`);
+      load();
+    } catch (e) {
+      alert(e.message || 'Reset failed');
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto p-4">
       <h1 className="text-xl font-semibold mb-2">Live match</h1>
@@ -196,16 +253,32 @@ export default function LivePlayPage({ params }) {
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           <div className="rounded-2xl border p-3 bg-white/60 dark:bg-gray-900/60">
-            <LiveBoard
-              fen={fen}
-              onMove={(from, to) => onDrop(from, to)}
-              onSelect={onSelect}
-              legalTargets={legalTargets}
-              arePiecesDraggable={!!token && !gameOver && !isAIControlledSide}
-              boardOrientation={boardOrientation}
-              side={match?.side}
-              lastMove={lastMove}
-            />
+            <div className="flex items-stretch">
+              {/* Left gutter: pieces captured by White (i.e., Black pieces) */}
+              <div className="w-10 mr-2 hidden sm:flex flex-col items-center justify-center gap-1" aria-label="White captured pieces">
+                {(captures.byWhite || []).map((s, i) => (
+                  <span key={`wside-${i}`} className="text-base leading-none">{s}</span>
+                ))}
+              </div>
+              <div className="flex-1">
+                <LiveBoard
+                  fen={fen}
+                  onMove={(from, to) => onDrop(from, to)}
+                  onSelect={onSelect}
+                  legalTargets={legalTargets}
+                  arePiecesDraggable={!!token && !gameOver && !isAIControlledSide}
+                  boardOrientation={boardOrientation}
+                  side={match?.side}
+                  lastMove={lastMove}
+                />
+              </div>
+              {/* Right gutter: pieces captured by Black (i.e., White pieces) */}
+              <div className="w-10 ml-2 hidden sm:flex flex-col items-center justify-center gap-1" aria-label="Black captured pieces">
+                {(captures.byBlack || []).map((s, i) => (
+                  <span key={`bside-${i}`} className="text-base leading-none">{s}</span>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="rounded-2xl border p-4">
             <div className="space-y-2 text-sm">
@@ -216,6 +289,7 @@ export default function LivePlayPage({ params }) {
               {match?.ai && (
                 <div className="text-purple-700">Playing vs AI{match.aiLevel ? ` (Level ${match.aiLevel})` : ''}.</div>
               )}
+              {/* Captured pieces moved to board gutters */}
               <div className="pt-2 grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded-xl border px-3 py-2">Game time: {formatElapsed(match?.createdAt)} </div>
                 <div className="rounded-xl border px-3 py-2">Move time: {formatElapsed(match?.lastMoveAt)} </div>
@@ -232,6 +306,11 @@ export default function LivePlayPage({ params }) {
                   </div>
                 </div>
               ) : null}
+              {admin && (
+                <div className="pt-2">
+                  <button onClick={resetAll} className="rounded-xl border px-3 py-1 text-xs text-red-700">Reset ALL matches/games</button>
+                </div>
+              )}
               {token ? (
                 <>
                   {!match?.ai && match?.drawOffer && match.drawOffer !== match?.side && (

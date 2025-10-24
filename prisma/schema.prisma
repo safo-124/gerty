@@ -523,6 +523,14 @@ model SiteSettings {
   homepageLiveRotationSeconds   Int      @default(300) // 5 minutes
   homepageLiveTournamentOnly    Boolean  @default(true)
   homepageLiveTournamentIds     String[]
+  // About page content
+  aboutTitle        String?
+  aboutSubtitle     String?
+  aboutBio          String?
+  aboutImageMain    String?
+  aboutImageAlt     String?
+  aboutGallery      String[]
+  aboutHighlights   String[]
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
 }

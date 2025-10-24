@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <defs>
+    <linearGradient id="gg4" x1="1" x2="0" y1="1" y2="0">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#gg4)"/>
+  <rect x="200" y="200" width="70" height="70" fill="#ffffff" opacity="0.12" rx="10"/>
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="600" font-family="Inter,Segoe UI,Arial,sans-serif">Gallery 4</text>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)"/>
+  <g fill="#ffffff" opacity="0.15">
+    <circle cx="200" cy="200" r="120"/>
+    <circle cx="1000" cy="180" r="90"/>
+    <circle cx="980" cy="620" r="140"/>
+  </g>
+  <text x="50%" y="42%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-size="64" font-weight="700" font-family="Inter,Segoe UI,Arial,sans-serif">About Photo</text>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#e9d5ff" font-size="28" font-family="Inter,Segoe UI,Arial,sans-serif">Temporary placeholder image</text>
+  <text x="50%" y="68%" dominant-baseline="middle" text-anchor="middle" fill="#c7d2fe" font-size="20" font-family="Inter,Segoe UI,Arial,sans-serif">Replace via Admin → Site Settings → About Page</text>
+</svg>

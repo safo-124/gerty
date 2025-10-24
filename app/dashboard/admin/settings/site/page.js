@@ -12,7 +12,15 @@ export default function AdminSiteSettingsPage() {
     homepageLiveCount: 2,
     homepageLiveRotationSeconds: 300,
     homepageLiveTournamentOnly: true,
-    homepageLiveTournamentIds: ''
+    homepageLiveTournamentIds: '',
+    // About page
+    aboutTitle: '',
+    aboutSubtitle: '',
+    aboutBio: '',
+    aboutImageMain: '',
+    aboutImageAlt: '',
+    aboutGallery: '', // comma-separated
+    aboutHighlights: '', // newline-separated
   });
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +44,13 @@ export default function AdminSiteSettingsPage() {
           homepageLiveRotationSeconds: Number(d.settings.homepageLiveRotationSeconds ?? 300),
           homepageLiveTournamentOnly: !!d.settings.homepageLiveTournamentOnly,
           homepageLiveTournamentIds: Array.isArray(d.settings.homepageLiveTournamentIds) ? d.settings.homepageLiveTournamentIds.join(',') : '',
+          aboutTitle: d.settings.aboutTitle || '',
+          aboutSubtitle: d.settings.aboutSubtitle || '',
+          aboutBio: d.settings.aboutBio || '',
+          aboutImageMain: d.settings.aboutImageMain || '',
+          aboutImageAlt: d.settings.aboutImageAlt || '',
+          aboutGallery: Array.isArray(d.settings.aboutGallery) ? d.settings.aboutGallery.join(',') : '',
+          aboutHighlights: Array.isArray(d.settings.aboutHighlights) ? d.settings.aboutHighlights.join('\n') : '',
         });
       })
       .catch(() => {});
@@ -57,6 +72,12 @@ export default function AdminSiteSettingsPage() {
           homepageLiveRotationSeconds: Number(form.homepageLiveRotationSeconds || 300),
           homepageLiveTournamentIds: typeof form.homepageLiveTournamentIds === 'string'
             ? form.homepageLiveTournamentIds.split(',').map((s) => s.trim()).filter(Boolean)
+            : [],
+          aboutGallery: typeof form.aboutGallery === 'string'
+            ? form.aboutGallery.split(',').map((s) => s.trim()).filter(Boolean)
+            : [],
+          aboutHighlights: typeof form.aboutHighlights === 'string'
+            ? form.aboutHighlights.split(/\r?\n|,/).map((s) => s.trim()).filter(Boolean)
             : [],
         }),
       });
@@ -114,6 +135,39 @@ export default function AdminSiteSettingsPage() {
             <div className="md:col-span-2">
               <label className="block text-sm text-gray-600 mb-1">Limit to Tournament IDs (comma-separated, optional)</label>
               <input className="w-full rounded-lg border p-3" placeholder="tournamentId1,tournamentId2" value={form.homepageLiveTournamentIds} onChange={(e) => setForm({ ...form, homepageLiveTournamentIds: e.target.value })} />
+            </div>
+          </div>
+        </div>
+        <div className="md:col-span-2 border-t pt-4">
+          <h2 className="text-xl font-semibold mb-3">About Page</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Title</label>
+              <input className="w-full rounded-lg border p-3" value={form.aboutTitle} onChange={(e) => setForm({ ...form, aboutTitle: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Subtitle</label>
+              <input className="w-full rounded-lg border p-3" value={form.aboutSubtitle} onChange={(e) => setForm({ ...form, aboutSubtitle: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">Bio</label>
+              <textarea rows={5} className="w-full rounded-lg border p-3" value={form.aboutBio} onChange={(e) => setForm({ ...form, aboutBio: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Main Image URL</label>
+              <input className="w-full rounded-lg border p-3" value={form.aboutImageMain} onChange={(e) => setForm({ ...form, aboutImageMain: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Alt Image URL</label>
+              <input className="w-full rounded-lg border p-3" value={form.aboutImageAlt} onChange={(e) => setForm({ ...form, aboutImageAlt: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">Gallery URLs (comma-separated)</label>
+              <input className="w-full rounded-lg border p-3" placeholder="https://.../img1.jpg, https://.../img2.jpg" value={form.aboutGallery} onChange={(e) => setForm({ ...form, aboutGallery: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">Highlights (one per line)</label>
+              <textarea rows={4} className="w-full rounded-lg border p-3" placeholder={"Coached 100+ students\nOpening repertoires tailored to your style"} value={form.aboutHighlights} onChange={(e) => setForm({ ...form, aboutHighlights: e.target.value })} />
             </div>
           </div>
         </div>

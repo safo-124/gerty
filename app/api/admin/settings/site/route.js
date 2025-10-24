@@ -45,6 +45,22 @@ export async function PATCH(request) {
         : (typeof body.homepageLiveTournamentIds === 'string' && body.homepageLiveTournamentIds.trim().length)
           ? body.homepageLiveTournamentIds.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
+      // About page fields
+      aboutTitle: body.aboutTitle ?? null,
+      aboutSubtitle: body.aboutSubtitle ?? null,
+      aboutBio: body.aboutBio ?? null,
+      aboutImageMain: body.aboutImageMain ?? null,
+      aboutImageAlt: body.aboutImageAlt ?? null,
+      aboutGallery: Array.isArray(body.aboutGallery)
+        ? body.aboutGallery
+        : (typeof body.aboutGallery === 'string' && body.aboutGallery.trim().length)
+          ? body.aboutGallery.split(',').map((s) => s.trim()).filter(Boolean)
+          : [],
+      aboutHighlights: Array.isArray(body.aboutHighlights)
+        ? body.aboutHighlights
+        : (typeof body.aboutHighlights === 'string' && body.aboutHighlights.trim().length)
+          ? body.aboutHighlights.split(/\r?\n|,/).map((s) => s.trim()).filter(Boolean)
+          : [],
     };
 
     const settings = await prisma.siteSettings.upsert({

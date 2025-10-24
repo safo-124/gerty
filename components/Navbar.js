@@ -67,6 +67,7 @@ export default function Navbar() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-4">
             <NavLink href="/play">Play</NavLink>
+            <NavLink href="/about">About</NavLink>
 
             {/* Watch dropdown: Live + Leaderboard */}
             <div
@@ -209,6 +210,7 @@ export default function Navbar() {
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-2">
               <NavLink href="/play" onClick={closeMenu}>Play</NavLink>
+              <NavLink href="/about" onClick={closeMenu}>About</NavLink>
 
               {/* Watch collapsible */}
               <button

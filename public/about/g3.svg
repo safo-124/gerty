@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <defs>
+    <linearGradient id="gg3" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#gg3)"/>
+  <circle cx="70" cy="230" r="30" fill="#ffffff" opacity="0.12"/>
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="600" font-family="Inter,Segoe UI,Arial,sans-serif">Gallery 3</text>
+</svg>

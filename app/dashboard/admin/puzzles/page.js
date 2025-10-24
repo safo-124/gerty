@@ -103,7 +103,15 @@ export default function AdminPuzzlesPage() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1">Preview</label>
-            <div className="rounded-2xl border p-3"><Chessboard id="preview" position={form.fen || undefined} /></div>
+            <div className="rounded-2xl border p-3 w-fit">
+              <Chessboard
+                id="preview"
+                position={form.fen || undefined}
+                boardWidth={240}
+                boardOrientation={form.sideToMove === 'BLACK' ? 'black' : 'white'}
+              />
+            </div>
+            <p className="mt-2 text-xs text-gray-500">Preview board is 240px wide.</p>
           </div>
         </div>
         <div className="pt-3"><Button onClick={create}>Create puzzle</Button></div>
