@@ -69,6 +69,26 @@ export default function LiveListPage() {
     }
   }
 
+  // Admin-only end controls for ongoing human matches
+  async function endMatch(id, status, result) {
+    if (!token) return alert('Not authorized');
+    try {
+      const res = await fetch(`/api/admin/live/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status, ...(result ? { result } : {}) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      const updated = data.match;
+      if (updated) {
+        setMatches((prev) => prev.map((m) => (m.id === id ? { ...m, status: updated.status, lastMoveAt: updated.lastMoveAt } : m)));
+      }
+    } catch (e) {
+      alert(e.message || 'Update failed');
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Live matches</h1>
@@ -95,6 +115,38 @@ export default function LiveListPage() {
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
                   </button>
+                )}
+                {user?.role === 'ADMIN' && m.status === 'ONGOING' && !m.ai && (
+                  <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-1">
+                    <button
+                      onClick={() => endMatch(m.id, 'DRAW')}
+                      title="Force draw"
+                      className="rounded-full border bg-white/90 px-2 py-1 text-[10px] hover:bg-gray-100"
+                    >
+                      Draw
+                    </button>
+                    <button
+                      onClick={() => endMatch(m.id, 'RESIGNATION', '1-0')}
+                      title="End: White wins"
+                      className="rounded-full border bg-white/90 px-2 py-1 text-[10px] hover:bg-green-50 hover:text-green-700"
+                    >
+                      W+
+                    </button>
+                    <button
+                      onClick={() => endMatch(m.id, 'RESIGNATION', '0-1')}
+                      title="End: Black wins"
+                      className="rounded-full border bg-white/90 px-2 py-1 text-[10px] hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      B+
+                    </button>
+                    <button
+                      onClick={() => endMatch(m.id, 'TIMEOUT')}
+                      title="Close (Timeout)"
+                      className="rounded-full border bg-white/90 px-2 py-1 text-[10px] hover:bg-amber-50 hover:text-amber-700"
+                    >
+                      T/O
+                    </button>
+                  </div>
                 )}
                 <Link href={`/play/live/${m.id}`} className="block">
                 <div className="rounded-lg overflow-hidden border bg-white mb-3">
