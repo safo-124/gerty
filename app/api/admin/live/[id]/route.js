@@ -26,10 +26,12 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Match already finished' }, { status: 400 });
     }
 
-    const data = { status };
+  const data = { status };
     if (status === 'DRAW') data.result = '1/2-1/2';
     if (status === 'RESIGNATION') data.result = result || '0-1';
     if (status === 'TIMEOUT') data.result = result || (match.turn === 'w' ? '0-1' : '1-0');
+  // Bump lastMoveAt so the finished-match auto-delete grace window starts now
+  data.lastMoveAt = new Date();
 
     const saved = await prisma.liveMatch.update({ where: { id }, data });
     return NextResponse.json({ match: saved });

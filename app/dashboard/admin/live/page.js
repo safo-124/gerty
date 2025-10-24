@@ -52,13 +52,13 @@ export default function AdminLivePage() {
     return () => { clearInterval(int); clearInterval(tickRef.current); };
   }, [load]);
 
-  const act = useCallback(async (id, status) => {
+  const act = useCallback(async (id, status, result) => {
     if (!token) return;
     try {
       const res = await fetch(`/api/admin/live/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(result ? { result } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update match');
@@ -133,6 +133,8 @@ export default function AdminLivePage() {
                       {scope==='ONGOING' ? (
                         <>
                           <Button variant="outline" size="sm" onClick={() => act(m.id, 'DRAW')}>Force Draw</Button>
+                          <Button variant="outline" size="sm" onClick={() => act(m.id, 'RESIGNATION', '1-0')}>End: White wins</Button>
+                          <Button variant="outline" size="sm" onClick={() => act(m.id, 'RESIGNATION', '0-1')}>End: Black wins</Button>
                           <Button variant="destructive" size="sm" onClick={() => act(m.id, 'TIMEOUT')}>Close (Timeout)</Button>
                         </>
                       ) : (
