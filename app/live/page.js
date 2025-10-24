@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Chessboard } from 'react-chessboard';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LiveListPage() {
+  const { user, token } = useAuth();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all | ai | human
@@ -53,6 +55,20 @@ export default function LiveListPage() {
     return () => { cancelled = true; clearInterval(int); };
   }, [visible]);
 
+  // Admin-only delete from public grid (finished matches only)
+  async function deleteMatch(id) {
+    if (!token) return alert('Not authorized');
+    if (!confirm('Delete this finished match? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/admin/live/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      setMatches((prev) => prev.filter((m) => m.id !== id));
+    } catch (e) {
+      alert(e.message || 'Delete failed');
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Live matches</h1>
@@ -70,7 +86,17 @@ export default function LiveListPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {visible.map((m) => (
-              <Link key={m.id} href={`/play/live/${m.id}`} className="group rounded-2xl border bg-white p-3 shadow-sm hover:shadow transition block">
+              <div key={m.id} className="group relative rounded-2xl border bg-white p-3 shadow-sm hover:shadow transition">
+                {user?.role === 'ADMIN' && m.status && m.status !== 'ONGOING' && (
+                  <button
+                    onClick={() => deleteMatch(m.id)}
+                    title="Delete finished match"
+                    className="absolute right-2 top-2 z-10 rounded-full border bg-white/90 p-1.5 text-gray-700 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                )}
+                <Link href={`/play/live/${m.id}`} className="block">
                 <div className="rounded-lg overflow-hidden border bg-white mb-3">
                   <Chessboard
                     id={`live-list-${m.id}`}
@@ -96,7 +122,8 @@ export default function LiveListPage() {
                   <div className="text-xs text-gray-600">{new Date(m.lastMoveAt).toLocaleString()}</div>
                 </div>
                 <div className="mt-2 text-purple-700 text-sm">Watch</div>
-              </Link>
+                </Link>
+              </div>
             ))}
           </div>
         </>

@@ -159,6 +159,7 @@ export default function Navbar() {
                     role="menu"
                   >
                     <Link href="/dashboard/admin" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Console</Link>
+                    <Link href="/dashboard/admin/live" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Live</Link>
                     <Link href="/dashboard/admin/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Puzzles</Link>
                     <Link href="/dashboard/admin/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Resources</Link>
                     <Link href="/dashboard/admin/blog" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Blog</Link>
@@ -274,6 +275,7 @@ export default function Navbar() {
                   {openAdmin && (
                     <div className="ml-3 flex flex-col gap-1">
                       <NavLink href="/dashboard/admin" onClick={closeMenu}>Admin Console</NavLink>
+                      <NavLink href="/dashboard/admin/live" onClick={closeMenu}>Admin Live</NavLink>
                       <NavLink href="/dashboard/admin/puzzles" onClick={closeMenu}>Admin Puzzles</NavLink>
                       <NavLink href="/dashboard/admin/resources" onClick={closeMenu}>Admin Resources</NavLink>
                       <NavLink href="/dashboard/admin/blog" onClick={closeMenu}>Admin Blog</NavLink>
