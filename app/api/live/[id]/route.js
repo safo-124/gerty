@@ -296,6 +296,15 @@ export async function GET(request, { params }) {
     // Do not leak tokens
     const { whiteToken, blackToken, ...safe } = match;
   const isCheckmate = match.status === 'CHECKMATE';
+  // Auto-delete matches that have finished (AI or human). We delete after responding once,
+  // so the viewer gets a final payload; subsequent polls will 404 and the list will clean up.
+  (async () => {
+    try {
+      if (match.status && match.status !== 'ONGOING') {
+        await prisma.liveMatch.delete({ where: { id: match.id } });
+      }
+    } catch {}
+  })();
   return NextResponse.json({ match: { ...safe, side, lastMoveFrom, lastMoveTo, ai, aiLevel, aiSide, aiStyleWhite, aiStyleBlack, isCheckmate, matePattern, tactics } });
   } catch (error) {
     console.error('Live get error:', error);

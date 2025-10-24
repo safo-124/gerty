@@ -50,9 +50,7 @@ export async function DELETE(request, { params }) {
 
     const match = await prisma.liveMatch.findUnique({ where: { id } });
     if (!match) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (match.status === 'ONGOING') {
-      return NextResponse.json({ error: 'Cannot delete an ongoing match' }, { status: 400 });
-    }
+    // Allow admin to delete any match (ongoing or finished)
     await prisma.liveMatch.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
