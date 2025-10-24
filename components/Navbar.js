@@ -102,7 +102,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Explore dropdown: Trainers, Tournaments, Store */}
+            {/* Explore dropdown: Trainers, Tournaments */}
             <div
               className="relative"
               onMouseEnter={() => { clearTimer(exploreTimer); setOpenExplore(true); }}
@@ -129,10 +129,7 @@ export default function Navbar() {
                     <span className="text-lg">🎯</span>
                     <span className="text-gray-700 group-hover:text-purple-700">Tournaments</span>
                   </Link>
-                  <Link href="/store" className="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300">
-                    <span className="text-lg">🛒</span>
-                    <span className="text-gray-700 group-hover:text-purple-700">Store</span>
-                  </Link>
+                  {/* Store moved to actions beside Get Started */}
                   <Link href="/blog" className="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300">
                     <span className="text-lg">📝</span>
                     <span className="text-gray-700 group-hover:text-purple-700">Blog</span>
@@ -248,13 +245,17 @@ export default function Navbar() {
                   </div>
                   <span className="text-sm font-semibold text-gray-700">{user.name}</span>
                 </div>
+                <Link href="/store"><Button variant="outline" size="sm" className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 font-semibold">🛒 Store</Button></Link>
                 <Button variant="outline" size="sm" onClick={logout} className="border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-semibold">Logout</Button>
               </>
             ) : (
               <>
                 <Link href="/login"><Button variant="outline" size="sm" className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 font-semibold">Login</Button></Link>
                 <Link href="/fund-me"><Button variant="outline" size="sm" className="border-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 font-semibold">💝 Donate</Button></Link>
-                <Link href="/register"><Button variant="gradient" size="sm" className="shadow-lg shadow-purple-200 font-semibold">Get Started</Button></Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/store"><Button variant="outline" size="sm" className="border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 font-semibold">🛒 Store</Button></Link>
+                  <Link href="/register"><Button variant="gradient" size="sm" className="shadow-lg shadow-purple-200 font-semibold">Get Started</Button></Link>
+                </div>
               </>
             )}
           </div>
@@ -283,6 +284,7 @@ export default function Navbar() {
             <div className="flex flex-col gap-3">
               <NavLink href="/play" onClick={closeMenu}>Play</NavLink>
               <NavLink href="/about" onClick={closeMenu}>About</NavLink>
+              <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
 
               {/* Watch collapsible */}
               <button
@@ -321,7 +323,6 @@ export default function Navbar() {
                 <div className="ml-4 flex flex-col gap-2 rounded-xl bg-purple-50/50 p-3">
                   <NavLink href="/trainers" onClick={closeMenu}>Trainers</NavLink>
                   <NavLink href="/tournaments" onClick={closeMenu}>Tournaments</NavLink>
-                  <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
                   <NavLink href="/blog" onClick={closeMenu}>Blog</NavLink>
                 </div>
               )}
