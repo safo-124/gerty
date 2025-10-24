@@ -296,12 +296,17 @@ export async function GET(request, { params }) {
     // Do not leak tokens
     const { whiteToken, blackToken, ...safe } = match;
   const isCheckmate = match.status === 'CHECKMATE';
-  // Auto-delete matches that have finished (AI or human). We delete after responding once,
-  // so the viewer gets a final payload; subsequent polls will 404 and the list will clean up.
+  // Auto-delete matches that have finished (AI or human) with a 2-minute grace window.
+  // We delete only if the last move was > 2 minutes ago, so viewers can still see the final state briefly.
   (async () => {
     try {
+      const GRACE_MS = 2 * 60 * 1000; // 2 minutes
       if (match.status && match.status !== 'ONGOING') {
-        await prisma.liveMatch.delete({ where: { id: match.id } });
+        const lastAtMs = new Date(match.lastMoveAt).getTime();
+        const age = Date.now() - lastAtMs;
+        if (Number.isFinite(age) && age > GRACE_MS) {
+          await prisma.liveMatch.delete({ where: { id: match.id } });
+        }
       }
     } catch {}
   })();
