@@ -1,7 +1,5 @@
 import { Suspense } from 'react';
-import nextDynamic from 'next/dynamic';
-
-const TrainersClient = nextDynamic(() => import('./TrainersClient'), { ssr: false });
+import TrainersClient from './TrainersClient';
 
 export const dynamic = 'force-dynamic';
 
