@@ -6,6 +6,10 @@ const nextConfig = {
 			{ protocol: 'http', hostname: '**' },
 		],
 	},
+  experimental: {
+    // Ensure Turbopack/Next treats this native module as external for server components
+    serverComponentsExternalPackages: ['stockfish'],
+  },
 };
 
 export default nextConfig;

@@ -13,6 +13,7 @@
     "dev:node": "node node_modules/next/dist/bin/next dev --turbopack",
     "smoke:admin-stats": "node scripts/smoke-admin-stats.mjs",
     "smoke:store": "node scripts/smoke-store.mjs",
+    "smoke:engine": "node --experimental-modules scripts/smoke-engine.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
