@@ -217,12 +217,12 @@ export async function GET(request, { params }) {
     const aiBoth = !!(isAiWhite && isAiBlack);
     if (aiBoth) {
       try {
-        const { Chess } = await import('chess.js');
-        const THIRTY_MIN = 30 * 60 * 1000;
+  const { Chess } = await import('chess.js');
+  const FIFTEEN_MIN = 15 * 60 * 1000;
         let updated = null;
         // Hard reset if older than 30 minutes
         const createdAtMs = new Date(match.createdAt).getTime();
-        if (Date.now() - createdAtMs > THIRTY_MIN && match.status === 'ONGOING') {
+  if (Date.now() - createdAtMs > FIFTEEN_MIN && match.status === 'ONGOING') {
           try {
             const c = new Chess(match.fen);
             const isMate = c.isCheckmate();

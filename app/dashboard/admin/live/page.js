@@ -20,6 +20,7 @@ export default function AdminLivePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [matches, setMatches] = useState([]);
+  const [scope, setScope] = useState('ONGOING'); // ONGOING | DONE
   const tickRef = useRef(null);
   const [, forceTick] = useState(0);
 
@@ -33,7 +34,7 @@ export default function AdminLivePage() {
     if (!token) return;
     setError('');
     try {
-      const res = await fetch('/api/admin/live?status=ONGOING', { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(`/api/admin/live?status=${encodeURIComponent(scope)}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load live matches');
       setMatches(data.matches || []);
@@ -42,7 +43,7 @@ export default function AdminLivePage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, scope]);
 
   useEffect(() => {
     load();
@@ -67,9 +68,41 @@ export default function AdminLivePage() {
     }
   }, [token, load]);
 
+  const remove = useCallback(async (id) => {
+    if (!token) return;
+    if (!confirm('Delete this finished match? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/admin/live/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }, [token, load]);
+
+  const removeAll = useCallback(async () => {
+    if (!token) return;
+    if (!confirm('Delete ALL finished matches? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/admin/live?scope=FINISHED', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Bulk delete failed');
+      await load();
+    } catch (e) { setError(e.message); }
+  }, [token, load]);
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Admin • Live Matches</h1>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm">View:</span>
+        <button className={`rounded-full px-3 py-1 border text-sm ${scope==='ONGOING' ? 'bg-purple-600 text-white' : ''}`} onClick={() => setScope('ONGOING')}>Ongoing</button>
+        <button className={`rounded-full px-3 py-1 border text-sm ${scope==='DONE' ? 'bg-purple-600 text-white' : ''}`} onClick={() => setScope('DONE')}>Finished</button>
+        {scope==='DONE' && (
+          <Button variant="destructive" size="sm" onClick={removeAll} className="ml-2">Delete all finished</Button>
+        )}
+      </div>
       {error && <div className="text-sm text-red-600 mb-3">{error}</div>}
       {loading ? (
         <div>Loading…</div>
@@ -95,10 +128,16 @@ export default function AdminLivePage() {
                   <td className="px-3 py-2">{m.status}</td>
                   <td className="px-3 py-2">{fmtIdle(m.lastMoveAt)}</td>
                   <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
                       <Link href={`/play/live/${m.id}`} className="text-purple-600 underline">View</Link>
-                      <Button variant="outline" size="sm" onClick={() => act(m.id, 'DRAW')}>Force Draw</Button>
-                      <Button variant="destructive" size="sm" onClick={() => act(m.id, 'TIMEOUT')}>Close (Timeout)</Button>
+                      {scope==='ONGOING' ? (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => act(m.id, 'DRAW')}>Force Draw</Button>
+                          <Button variant="destructive" size="sm" onClick={() => act(m.id, 'TIMEOUT')}>Close (Timeout)</Button>
+                        </>
+                      ) : (
+                        <Button variant="destructive" size="sm" onClick={() => remove(m.id)}>Delete</Button>
+                      )}
                     </div>
                   </td>
                 </tr>

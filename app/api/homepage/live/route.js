@@ -151,10 +151,10 @@ export async function GET() {
           },
         });
       }
-      // Hard reset every 30 minutes: finish current game and start a new one
-  const THIRTY_MIN = 30 * 60 * 1000;
+    // Hard reset every 15 minutes: finish current game and start a new one
+  const FIFTEEN_MIN = 15 * 60 * 1000;
       const createdAtMs = new Date(aiMatch.createdAt).getTime();
-      if (Date.now() - createdAtMs > THIRTY_MIN && aiMatch.status === 'ONGOING') {
+    if (Date.now() - createdAtMs > FIFTEEN_MIN && aiMatch.status === 'ONGOING') {
         try {
           const { Chess } = await import('chess.js');
           const c = new Chess(aiMatch.fen);

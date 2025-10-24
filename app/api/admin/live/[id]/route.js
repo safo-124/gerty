@@ -38,3 +38,25 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'Failed to update match' }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const auth = await verifyAuth(request);
+    if (!auth.valid || auth.payload?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { id } = params || {};
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const match = await prisma.liveMatch.findUnique({ where: { id } });
+    if (!match) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (match.status === 'ONGOING') {
+      return NextResponse.json({ error: 'Cannot delete an ongoing match' }, { status: 400 });
+    }
+    await prisma.liveMatch.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Admin live delete error:', error);
+    return NextResponse.json({ error: 'Failed to delete match' }, { status: 500 });
+  }
+}

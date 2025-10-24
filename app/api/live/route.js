@@ -12,14 +12,16 @@ function makeToken() {
 
 export async function GET() {
   try {
+    // Return the most recent matches (ongoing or recently finished) so AI games are visible
     const rows = await prisma.liveMatch.findMany({
-      where: { status: 'ONGOING' },
       orderBy: { lastMoveAt: 'desc' },
+      take: 24,
       select: {
         id: true,
         title: true,
         createdAt: true,
         lastMoveAt: true,
+        status: true,
         whiteToken: true,
         blackToken: true,
       },
@@ -28,7 +30,7 @@ export async function GET() {
       const aiWhite = m.whiteToken?.startsWith?.('AI:');
       const aiBlack = m.blackToken?.startsWith?.('AI:');
       const aiLevel = aiWhite ? Number(m.whiteToken.split(':')[1] || '1') : aiBlack ? Number(m.blackToken.split(':')[1] || '1') : undefined;
-      return { id: m.id, title: m.title, createdAt: m.createdAt, lastMoveAt: m.lastMoveAt, ai: !!(aiWhite || aiBlack), aiLevel };
+      return { id: m.id, title: m.title, createdAt: m.createdAt, lastMoveAt: m.lastMoveAt, status: m.status, ai: !!(aiWhite || aiBlack), aiLevel };
     });
     return NextResponse.json({ matches });
   } catch (error) {
