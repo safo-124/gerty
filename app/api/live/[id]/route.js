@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getBestMoveWithStockfish, uciToMove } from '@/lib/stockfish';
+
+export const runtime = 'nodejs';
 function inBounds(f, r) {
   return f >= 0 && f < 8 && r >= 0 && r < 8;
 }
@@ -236,26 +239,66 @@ export async function GET(request, { params }) {
             });
           } catch {}
         } else {
-          // Move quickly: advance roughly every 0.5s if ongoing
+          // Move quickly via Stockfish: advance roughly every 0.6s if ongoing
           const lastAt = new Date(match.lastMoveAt).getTime();
-          if (Date.now() - lastAt > 500 && match.status === 'ONGOING') {
-            const c = new Chess(match.fen);
-            const moves = c.moves({ verbose: true });
-            if (moves.length) {
-              const style = (c.turn() === 'w' ? match.whiteToken : match.blackToken)?.split(':')[2] || 'agg';
-              const m = pickHeuristicMove(moves, c, style) || moves[0];
-              c.move(m);
-              let upd = {
-                fen: c.fen(),
-                pgn: c.pgn(),
-                turn: c.turn(),
-                lastMoveAt: new Date(),
-              };
-              if (c.isGameOver()) {
-                upd.status = c.isCheckmate() ? 'CHECKMATE' : 'DRAW';
-                upd.result = upd.status === 'CHECKMATE' ? (c.turn() === 'w' ? '0-1' : '1-0') : '1/2-1/2';
+          if (Date.now() - lastAt > 600 && match.status === 'ONGOING') {
+            const timed = (match.tcSeconds || 0) > 0;
+            let wTime = match.whiteTimeMs || 0;
+            let bTime = match.blackTimeMs || 0;
+            const toMove = (() => { try { return new Chess(match.fen).turn(); } catch { return match.turn; } })();
+            // Subtract elapsed time for side to move
+            if (timed) {
+              const elapsed = Math.max(0, Date.now() - lastAt);
+              if (toMove === 'w') {
+                wTime = Math.max(0, wTime - elapsed);
+                if (wTime <= 0) {
+                  const tSaved = await prisma.liveMatch.update({ where: { id: match.id }, data: { status: 'TIMEOUT', result: '0-1' } });
+                  updated = tSaved;
+                }
+              } else {
+                bTime = Math.max(0, bTime - elapsed);
+                if (bTime <= 0) {
+                  const tSaved = await prisma.liveMatch.update({ where: { id: match.id }, data: { status: 'TIMEOUT', result: '1-0' } });
+                  updated = tSaved;
+                }
               }
-              updated = await prisma.liveMatch.update({ where: { id: match.id }, data: upd });
+            }
+            if (!updated) {
+              const c = new Chess(match.fen);
+              const ms = c.moves({ verbose: true });
+              if (ms.length) {
+                const level = (toMove === 'w' ? Number(match.whiteToken.split(':')[1] || '1') : Number(match.blackToken.split(':')[1] || '1')) || 1;
+                const map = { 1: { skill: 4, mt: 200 }, 2: { skill: 10, mt: 250 }, 3: { skill: 16, mt: 300 } };
+                const cfg = map[Math.max(1, Math.min(3, level))];
+                // Ask Stockfish for a move
+                const start = Date.now();
+                let mvObj = null;
+                try {
+                  const { bestmove } = await getBestMoveWithStockfish(match.fen, { movetime: cfg.mt, skill: cfg.skill });
+                  if (bestmove) mvObj = uciToMove(bestmove);
+                } catch {}
+                if (!mvObj) {
+                  mvObj = { from: ms[0].from, to: ms[0].to, promotion: ms[0].promotion };
+                }
+                c.move(mvObj);
+                let upd = {
+                  fen: c.fen(),
+                  pgn: c.pgn(),
+                  turn: c.turn(),
+                  lastMoveAt: new Date(),
+                };
+                if (timed) {
+                  // Add increment to mover
+                  const incMs = (match.incSeconds || 0) * 1000;
+                  if (toMove === 'w') wTime = Math.max(0, wTime + incMs); else bTime = Math.max(0, bTime + incMs);
+                  upd.whiteTimeMs = wTime; upd.blackTimeMs = bTime;
+                }
+                if (c.isGameOver()) {
+                  upd.status = c.isCheckmate() ? 'CHECKMATE' : 'DRAW';
+                  upd.result = upd.status === 'CHECKMATE' ? (c.turn() === 'w' ? '0-1' : '1-0') : '1/2-1/2';
+                }
+                updated = await prisma.liveMatch.update({ where: { id: match.id }, data: upd });
+              }
             }
           }
         }

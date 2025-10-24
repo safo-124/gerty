@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getBestMoveWithStockfish, uciToMove } from '@/lib/stockfish';
+
+export const runtime = 'nodejs';
 
 function scoreMaterial(chess) {
   // Simple material evaluation
@@ -16,47 +19,7 @@ function scoreMaterial(chess) {
   return score;
 }
 
-function pickAIMove(ChessCtor, fen, aiColor, level = 1) {
-  const chess = new ChessCtor(fen);
-  const moves = chess.moves({ verbose: true });
-  if (!moves.length) return null;
-  // Level 1: random
-  if (level <= 1) return moves[Math.floor(Math.random() * moves.length)];
-  // Level 2: one-ply material greedy
-  if (level === 2) {
-    let best = null; let bestScore = -Infinity;
-    for (const m of moves) {
-      chess.move({ from: m.from, to: m.to, promotion: m.promotion });
-      const s = scoreMaterial(chess) * (aiColor === 'w' ? 1 : -1);
-      if (s > bestScore) { bestScore = s; best = m; }
-      chess.undo();
-    }
-    return best || moves[0];
-  }
-  // Level 3: shallow minimax (depth 2)
-  function minimax(ch, depth, maximizing, aiC) {
-    if (depth === 0 || ch.isGameOver()) return scoreMaterial(ch) * (aiC === 'w' ? 1 : -1);
-    const ms = ch.moves({ verbose: true });
-    if (!ms.length) return scoreMaterial(ch) * (aiC === 'w' ? 1 : -1);
-    if (maximizing) {
-      let val = -Infinity;
-      for (const m of ms) { ch.move(m); val = Math.max(val, minimax(ch, depth - 1, false, aiC)); ch.undo(); }
-      return val;
-    } else {
-      let val = Infinity;
-      for (const m of ms) { ch.move(m); val = Math.min(val, minimax(ch, depth - 1, true, aiC)); ch.undo(); }
-      return val;
-    }
-  }
-  let best = null; let bestScore = -Infinity;
-  for (const m of moves) {
-    chess.move(m);
-    const val = minimax(chess, 1, false, aiColor); // depth 2 total
-    if (val > bestScore) { bestScore = val; best = m; }
-    chess.undo();
-  }
-  return best || moves[0];
-}
+// pickAIMove replaced by Stockfish integration; legacy kept only as fallback below if Stockfish fails.
 
 export async function POST(request, { params }) {
   try {
@@ -151,16 +114,25 @@ export async function POST(request, { params }) {
     const aiSide = aiWhite ? 'w' : aiBlack ? 'b' : undefined;
     if (saved.status === 'ONGOING' && aiSide && saved.turn === aiSide) {
       const level = (aiWhite ? Number(match.whiteToken.split(':')[1] || '1') : aiBlack ? Number(match.blackToken.split(':')[1] || '1') : 1) || 1;
-      // Optional thinking delay for realism based on level
-      const delays = { 1: [200, 400], 2: [600, 900], 3: [1000, 1600] };
-      const [minD, maxD] = delays[Math.max(1, Math.min(3, level))];
-      const delay = Math.floor(minD + Math.random() * (maxD - minD));
-      await new Promise((r) => setTimeout(r, delay));
-      // Time enforcement for AI side prior to moving
+      // Map our 1-3 levels to Stockfish Skill + movetime
+      const map = {
+        1: { skill: 4, mt: 400 },
+        2: { skill: 10, mt: 900 },
+        3: { skill: 16, mt: 1400 },
+      };
+      const cfg = map[Math.max(1, Math.min(3, level))];
+      // Compute AI move with Stockfish; then update clocks including true think time
       if (timed) {
+        let w2 = saved.whiteTimeMs || 0; let b2 = saved.blackTimeMs || 0;
+        const start = Date.now();
+        let aiMoveObj = null;
+        try {
+          const { bestmove } = await getBestMoveWithStockfish(saved.fen, { movetime: cfg.mt, skill: cfg.skill });
+          if (bestmove) aiMoveObj = uciToMove(bestmove);
+        } catch {}
+        // Subtract elapsed since lastMoveAt including engine think time
         const lastAt2 = new Date(saved.lastMoveAt).getTime();
         const elapsed2 = Math.max(0, Date.now() - lastAt2);
-        let w2 = saved.whiteTimeMs || 0; let b2 = saved.blackTimeMs || 0;
         if (aiSide === 'w') {
           w2 = Math.max(0, w2 - elapsed2);
           if (w2 <= 0) {
@@ -174,11 +146,15 @@ export async function POST(request, { params }) {
             const { whiteToken, blackToken, ...safe } = tSaved; return NextResponse.json({ match: safe });
           }
         }
-        // Apply AI move
-        const aiMove = pickAIMove(Chess, saved.fen, aiSide, Math.max(1, Math.min(3, level)));
-        if (aiMove) {
+        // Fallback to a legal move if SF fails
+        if (!aiMoveObj) {
+          const cTmp = new Chess(saved.fen);
+          const ms = cTmp.moves({ verbose: true });
+          aiMoveObj = ms && ms[0] ? { from: ms[0].from, to: ms[0].to, promotion: ms[0].promotion } : null;
+        }
+        if (aiMoveObj) {
           const c2 = new Chess(saved.fen);
-          c2.move(aiMove);
+          c2.move(aiMoveObj);
           const upd2 = {
             fen: c2.fen(),
             pgn: c2.pgn(),
@@ -202,10 +178,19 @@ export async function POST(request, { params }) {
           saved = await prisma.liveMatch.update({ where: { id }, data: upd2 });
         }
       } else {
-        const aiMove = pickAIMove(Chess, saved.fen, aiSide, Math.max(1, Math.min(3, level)));
-        if (aiMove) {
+        let aiMoveObj = null;
+        try {
+          const { bestmove } = await getBestMoveWithStockfish(saved.fen, { movetime: cfg.mt, skill: cfg.skill });
+          if (bestmove) aiMoveObj = uciToMove(bestmove);
+        } catch {}
+        if (!aiMoveObj) {
+          const cTmp = new Chess(saved.fen);
+          const ms = cTmp.moves({ verbose: true });
+          aiMoveObj = ms && ms[0] ? { from: ms[0].from, to: ms[0].to, promotion: ms[0].promotion } : null;
+        }
+        if (aiMoveObj) {
           const c2 = new Chess(saved.fen);
-          c2.move(aiMove);
+          c2.move(aiMoveObj);
           const upd2 = {
             fen: c2.fen(),
             pgn: c2.pgn(),
