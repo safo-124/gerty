@@ -187,23 +187,54 @@ export default function LiveSpotlight() {
   if (!state.enabled || !items.length) return null;
 
   return (
-    <section className="py-10 bg-gradient-to-b from-white to-purple-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-end justify-between mb-4">
+    <section className="relative py-20 overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-purple-50/50 to-pink-50/30"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 right-20 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 left-20 w-80 h-80 bg-pink-200/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <div className="text-xs uppercase tracking-wide text-purple-700">Now Playing</div>
-            <h2 className="text-2xl font-bold text-gray-900">Live Spotlight</h2>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-100 to-pink-100 border border-red-200 mb-3">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+              <span className="text-xs font-bold text-red-700 uppercase tracking-wider">Live Now</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+              Live Spotlight
+            </h2>
+            <p className="text-gray-600 mt-2 text-lg">Watch games in real-time</p>
           </div>
-          <Link href="/live" className="text-purple-700 hover:underline text-sm">See all</Link>
+          <Link href="/live" className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            See all live games
+            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
         </div>
-        <div className="grid md:grid-cols-2 gap-4">
+
+        {/* Live Games Grid */}
+        <div className="grid lg:grid-cols-2 gap-8">
           {items.map((m) => {
             const preview = previews[m.id];
             return (
-              <Link key={m.id} href={m.href} className="group rounded-2xl border bg-white p-4 shadow hover:shadow-lg transition">
-                <div className="grid grid-cols-5 gap-4 items-center">
-                  <div className="col-span-2">
-                    <div className="rounded-lg overflow-hidden border">
+              <Link key={m.id} href={m.href} className="group rounded-3xl border-2 border-purple-100 bg-white/90 backdrop-blur-md p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                <div className="grid md:grid-cols-5 gap-6 items-start">
+                  {/* Chessboard */}
+                  <div className="md:col-span-2">
+                    <div className="relative rounded-2xl overflow-hidden border-4 border-gradient-to-br from-purple-200 to-pink-200 shadow-lg">
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <span className="relative flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-white"></span>
+                        </span>
+                      </div>
                       <Chessboard
                         id={`spot-${m.id}`}
                         position={preview?.fen || undefined}
@@ -214,20 +245,37 @@ export default function LiveSpotlight() {
                       />
                     </div>
                   </div>
-                  <div className="col-span-3 min-w-0">
-                    <div className="font-medium truncate group-hover:text-purple-700">{m.title || 'Live match'}</div>
-                    <div className="text-xs text-gray-500 mb-2">Last move: {new Date(m.lastMoveAt).toLocaleTimeString()}</div>
+
+                  {/* Game Info */}
+                  <div className="md:col-span-3 flex flex-col gap-4">
+                    {/* Title & Time */}
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text group-hover:text-transparent transition-all truncate">
+                        {m.title || 'Live match'}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Last move: {new Date(m.lastMoveAt).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Status/Moves */}
                     {preview?.isCheckmate || preview?.status === 'CHECKMATE' ? (
-                      <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-xs font-medium text-red-600">
-                          <span className="inline-block rounded-full bg-red-50 px-2 py-0.5 border border-red-200">Checkmate</span>
-                          {preview?.matePattern && <span>{preview.matePattern}</span>}
+                      <div className="space-y-3">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200">
+                          <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-bold text-red-700">Checkmate</span>
+                          {preview?.matePattern && <span className="text-sm text-red-600">• {preview.matePattern}</span>}
                         </div>
                         {preview?.tactics?.length ? (
-                          <div className="text-xs text-gray-700 flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-2">
                             {formatTactics(preview.tactics).map((t) => (
-                              <span key={t.label} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 border border-gray-200">
-                                <span aria-hidden>{t.icon}</span>
+                              <span key={t.label} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 px-3 py-1 text-xs font-semibold text-purple-700">
+                                <span aria-hidden className="text-sm">{t.icon}</span>
                                 <span>{t.label}</span>
                               </span>
                             ))}
@@ -235,26 +283,38 @@ export default function LiveSpotlight() {
                         ) : null}
                       </div>
                     ) : preview?.moves?.length ? (
-                      <div className="text-xs text-gray-700 line-clamp-2">
-                        {preview.moves.join(' ')}
+                      <div className="rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 px-4 py-3">
+                        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Recent Moves</div>
+                        <div className="text-sm font-mono text-gray-800">
+                          {preview.moves.join(' • ')}
+                        </div>
                       </div>
                     ) : (
-                      <div className="text-xs text-gray-400">Loading moves…</div>
+                      <div className="rounded-2xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-500 italic">
+                        Loading moves…
+                      </div>
                     )}
+
                     {/* Captured pieces */}
                     {(preview?.capturedByWhite?.length || preview?.capturedByBlack?.length) ? (
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <span className="font-medium">White +</span>
-                          <div className="flex flex-wrap gap-1">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200 px-3 py-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">♔</span>
+                            <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">White +</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 text-xl">
                             {(preview.capturedByWhite || []).map((s, i) => (
                               <span key={`wcap-${i}`} className="leading-none">{s}</span>
                             ))}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <span className="font-medium">Black +</span>
-                          <div className="flex flex-wrap gap-1">
+                        <div className="rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100/50 border border-pink-200 px-3 py-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">♚</span>
+                            <span className="text-xs font-bold text-pink-700 uppercase tracking-wide">Black +</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 text-xl">
                             {(preview.capturedByBlack || []).map((s, i) => (
                               <span key={`bcap-${i}`} className="leading-none">{s}</span>
                             ))}
@@ -262,7 +322,29 @@ export default function LiveSpotlight() {
                         </div>
                       </div>
                     ) : null}
-                    <div className="mt-3 text-purple-700 text-sm">{preview?.isCheckmate || preview?.status === 'CHECKMATE' ? 'Review' : 'Watch'}</div>
+
+                    {/* CTA */}
+                    <div className="inline-flex items-center gap-2 text-purple-700 font-semibold group-hover:gap-3 transition-all">
+                      {preview?.isCheckmate || preview?.status === 'CHECKMATE' ? (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Review Game
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                          </svg>
+                          Watch Live
+                        </>
+                      )}
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </Link>

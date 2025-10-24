@@ -66,36 +66,101 @@ export default function HomePage() {
   <LiveSpotlight />
 
       {/* Latest from the Blog */}
-      <section className="py-16 bg-gradient-to-b from-pink-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="flex items-end justify-between mb-8">
+      <section className="relative py-20 overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-pink-50/50 via-purple-50/30 to-white"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-10 right-20 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
             <div>
-              <Badge variant="outline" className="mb-3 text-sm px-4 py-1">Updates</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Latest from the Blog</h2>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 mb-4">
+                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clipRule="evenodd" />
+                  <path d="M15 7h1a2 2 0 012 2v5.5a1.5 1.5 0 01-3 0V7z" />
+                </svg>
+                <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Blog Updates</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Latest from the Blog
+              </h2>
+              <p className="text-gray-600 mt-2 text-lg">Stay updated with chess insights and news</p>
             </div>
-            <Link href="/blog" className="text-purple-700 hover:underline">View all</Link>
+            <Link href="/blog" className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              View all posts
+              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
           </div>
+
           {latestPosts.length === 0 ? (
-            <p className="text-gray-600">No posts yet. Check back soon.</p>
+            <div className="rounded-3xl border-2 border-dashed border-gray-300 bg-white/80 backdrop-blur-sm p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts yet</h3>
+              <p className="text-gray-600">Check back soon for exciting chess content!</p>
+            </div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {latestPosts.map((post) => (
-                <Link key={post.slug} href={`/blog/${post.slug}`} className="group rounded-2xl border bg-white shadow hover:shadow-lg transition overflow-hidden">
+                <Link key={post.slug} href={`/blog/${post.slug}`} className="group rounded-3xl border-2 border-purple-100 bg-white/90 backdrop-blur-md shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
                   {post.coverImage && (
-                    <div className="relative h-40 w-full">
-                      <Image src={post.coverImage} alt="" fill className="object-cover" />
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10"></div>
+                      <Image src={post.coverImage} alt={post.title || ''} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <div className="absolute top-4 right-4 z-20">
+                        <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs font-bold text-purple-700 border border-purple-200">
+                          New
+                        </span>
+                      </div>
                     </div>
                   )}
-                  <div className="p-5">
-                    <h3 className="text-lg font-semibold group-hover:text-purple-700">{post.title}</h3>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {post.category && <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{post.category}</span>}
-                      {Array.isArray(post.tags) && post.tags.slice(0,1).map((t) => (
-                        <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-700">#{t}</span>
+                  <div className="p-6">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {post.category && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 px-3 py-1 text-xs font-bold text-purple-700 uppercase tracking-wide">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                          </svg>
+                          {post.category}
+                        </span>
+                      )}
+                      {Array.isArray(post.tags) && post.tags.slice(0,2).map((t) => (
+                        <span key={t} className="rounded-full bg-gray-100 border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-700">
+                          #{t}
+                        </span>
                       ))}
                     </div>
-                    {post.excerpt && <p className="mt-2 text-gray-600 line-clamp-2">{post.excerpt}</p>}
-                    <div className="mt-3 text-xs text-gray-500">{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ''}</div>
+                    <h3 className="text-xl font-bold text-gray-900 group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text group-hover:text-transparent transition-all mb-3 line-clamp-2">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="text-gray-600 line-clamp-3 mb-4 leading-relaxed">
+                        {post.excerpt}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2 text-purple-700 font-semibold group-hover:gap-3 transition-all">
+                        <span className="text-sm">Read more</span>
+                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </Link>
               ))}
