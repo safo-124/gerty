@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 const NavLink = ({ href, children, onClick }) => {
   const pathname = usePathname();
@@ -34,6 +34,13 @@ export default function Navbar() {
   const [openWatch, setOpenWatch] = useState(false);
   const [openLearn, setOpenLearn] = useState(false);
   const [openAdmin, setOpenAdmin] = useState(false);
+  const watchTimer = useRef(null);
+  const exploreTimer = useRef(null);
+  const learnTimer = useRef(null);
+  const adminTimer = useRef(null);
+
+  const clearTimer = (ref) => { if (ref.current) { clearTimeout(ref.current); ref.current = null; } };
+  const delayClose = (ref, closeFn, ms = 160) => { clearTimer(ref); ref.current = setTimeout(() => closeFn(false), ms); };
 
   const dashboardHref = user
     ? user.role === 'TRAINER'
@@ -64,14 +71,19 @@ export default function Navbar() {
             {/* Watch dropdown: Live + Leaderboard */}
             <div
               className="relative"
-              onMouseEnter={() => setOpenWatch(true)}
-              onMouseLeave={() => setOpenWatch(false)}
+              onMouseEnter={() => { clearTimer(watchTimer); setOpenWatch(true); }}
+              onMouseLeave={() => { delayClose(watchTimer, setOpenWatch); }}
             >
-              <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+              <button aria-haspopup="menu" aria-expanded={openWatch} className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
                 Watch ▾
               </button>
               {openWatch && (
-                <div className="absolute z-50 mt-2 w-44 rounded-xl border bg-white p-2 shadow-xl">
+                <div
+                  className="absolute z-50 mt-2 w-44 rounded-xl border bg-white p-2 shadow-xl"
+                  onMouseEnter={() => { clearTimer(watchTimer); setOpenWatch(true); }}
+                  onMouseLeave={() => { delayClose(watchTimer, setOpenWatch); }}
+                  role="menu"
+                >
                   <Link href="/live" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Live</Link>
                   <Link href="/leaderboard" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Leaderboard</Link>
                 </div>
@@ -81,14 +93,19 @@ export default function Navbar() {
             {/* Explore dropdown: Trainers, Tournaments, Store, Fund Me */}
             <div
               className="relative"
-              onMouseEnter={() => setOpenExplore(true)}
-              onMouseLeave={() => setOpenExplore(false)}
+              onMouseEnter={() => { clearTimer(exploreTimer); setOpenExplore(true); }}
+              onMouseLeave={() => { delayClose(exploreTimer, setOpenExplore); }}
             >
-              <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+              <button aria-haspopup="menu" aria-expanded={openExplore} className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
                 Explore ▾
               </button>
               {openExplore && (
-                <div className="absolute z-50 mt-2 w-52 rounded-xl border bg-white p-2 shadow-xl">
+                <div
+                  className="absolute z-50 mt-2 w-52 rounded-xl border bg-white p-2 shadow-xl"
+                  onMouseEnter={() => { clearTimer(exploreTimer); setOpenExplore(true); }}
+                  onMouseLeave={() => { delayClose(exploreTimer, setOpenExplore); }}
+                  role="menu"
+                >
                   <Link href="/trainers" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Trainers</Link>
                   <Link href="/tournaments" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Tournaments</Link>
                   <Link href="/store" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Store</Link>
@@ -102,14 +119,19 @@ export default function Navbar() {
             {user?.role === 'STUDENT' && (
               <div
                 className="relative"
-                onMouseEnter={() => setOpenLearn(true)}
-                onMouseLeave={() => setOpenLearn(false)}
+                onMouseEnter={() => { clearTimer(learnTimer); setOpenLearn(true); }}
+                onMouseLeave={() => { delayClose(learnTimer, setOpenLearn); }}
               >
-                <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+                <button aria-haspopup="menu" aria-expanded={openLearn} className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
                   Learn ▾
                 </button>
                 {openLearn && (
-                  <div className="absolute z-50 mt-2 w-48 rounded-xl border bg-white p-2 shadow-xl">
+                  <div
+                    className="absolute z-50 mt-2 w-48 rounded-xl border bg-white p-2 shadow-xl"
+                    onMouseEnter={() => { clearTimer(learnTimer); setOpenLearn(true); }}
+                    onMouseLeave={() => { delayClose(learnTimer, setOpenLearn); }}
+                    role="menu"
+                  >
                     <Link href="/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Puzzles</Link>
                     <Link href="/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Resources</Link>
                     <Link href="/dashboard/student/analytics/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Analytics</Link>
@@ -122,14 +144,19 @@ export default function Navbar() {
             {user?.role === 'ADMIN' && (
               <div
                 className="relative"
-                onMouseEnter={() => setOpenAdmin(true)}
-                onMouseLeave={() => setOpenAdmin(false)}
+                onMouseEnter={() => { clearTimer(adminTimer); setOpenAdmin(true); }}
+                onMouseLeave={() => { delayClose(adminTimer, setOpenAdmin); }}
               >
-                <button className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
+                <button aria-haspopup="menu" aria-expanded={openAdmin} className="relative rounded-xl px-2 py-1 text-sm font-medium text-gray-700 hover:text-purple-700">
                   Admin ▾
                 </button>
                 {openAdmin && (
-                  <div className="absolute z-50 mt-2 w-56 rounded-xl border bg-white p-2 shadow-xl">
+                  <div
+                    className="absolute z-50 mt-2 w-56 rounded-xl border bg-white p-2 shadow-xl"
+                    onMouseEnter={() => { clearTimer(adminTimer); setOpenAdmin(true); }}
+                    onMouseLeave={() => { delayClose(adminTimer, setOpenAdmin); }}
+                    role="menu"
+                  >
                     <Link href="/dashboard/admin" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Console</Link>
                     <Link href="/dashboard/admin/puzzles" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Puzzles</Link>
                     <Link href="/dashboard/admin/resources" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Admin Resources</Link>
