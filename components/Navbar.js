@@ -110,7 +110,6 @@ export default function Navbar() {
                   <Link href="/trainers" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Trainers</Link>
                   <Link href="/tournaments" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Tournaments</Link>
                   <Link href="/store" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Store</Link>
-                  <Link href="/fund-me" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Fund Me</Link>
                   <Link href="/blog" className="block rounded-lg px-3 py-2 text-sm hover:bg-purple-50">Blog</Link>
                 </div>
               )}
@@ -183,6 +182,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login"><Button variant="outline" size="sm">Login</Button></Link>
+                <Link href="/fund-me"><Button variant="outline" size="sm" className="border-amber-300 text-amber-700">Donate</Button></Link>
                 <Link href="/register"><Button variant="gradient" size="sm">Get Started</Button></Link>
               </>
             )}
@@ -239,7 +239,6 @@ export default function Navbar() {
                   <NavLink href="/trainers" onClick={closeMenu}>Trainers</NavLink>
                   <NavLink href="/tournaments" onClick={closeMenu}>Tournaments</NavLink>
                   <NavLink href="/store" onClick={closeMenu}>Store</NavLink>
-                  <NavLink href="/fund-me" onClick={closeMenu}>Fund Me</NavLink>
                   <NavLink href="/blog" onClick={closeMenu}>Blog</NavLink>
                 </div>
               )}
@@ -298,6 +297,7 @@ export default function Navbar() {
               ) : (
                 <div className="flex items-center gap-2">
                   <Link href="/login" onClick={closeMenu} className="flex-1"><Button variant="outline" size="sm" className="w-full">Login</Button></Link>
+                  <Link href="/fund-me" onClick={closeMenu} className="flex-1"><Button variant="outline" size="sm" className="w-full border-amber-300 text-amber-700">Donate</Button></Link>
                   <Link href="/register" onClick={closeMenu} className="flex-1"><Button variant="gradient" size="sm" className="w-full">Get Started</Button></Link>
                 </div>
               )}
