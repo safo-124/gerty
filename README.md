@@ -339,3 +339,22 @@ Built with ❤️ for chess enthusiasts worldwide ♟️
 
 Built with ❤️ for chess enthusiasts worldwide ♟️
 
+## ♟️ Engine / AI
+
+By default, the app runs Stockfish 17.1 locally (Node Emscripten WASM) to compute AI moves for live games. The helper at `lib/stockfish.js` asks for a best move given a FEN with configurable `movetime`, `depth`, and `skill` and is used by the live APIs.
+
+If you prefer an external Stockfish API (recommended when you don’t want to run the engine in-process), configure these environment variables and the app will try the API first and fall back to the local engine if needed:
+
+- `STOCKFISH_API_URL` (or `NEXT_PUBLIC_STOCKFISH_API_URL`): A POST endpoint that accepts JSON `{ fen, movetime?, depth?, skill? }` and returns a JSON best move in any of these fields: `{ bestmove }`, `{ bestMove }`, `{ move }`, `{ uci }`.
+- `STOCKFISH_API_KEY` (optional): Added as `Authorization: Bearer <key>`.
+- `STOCKFISH_API_TIMEOUT_MS` (optional): Request timeout in milliseconds (default 5000).
+
+Client implementation: `lib/stockfish-api.js`.
+
+Smokes to validate the setup:
+
+- Local engine: `npm run smoke:engine`
+- External API: `npm run smoke:engine:api`
+- In-memory live flow (human move + AI reply + clocks): `npm run smoke:live-ai`
+
+

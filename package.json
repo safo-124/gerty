@@ -14,6 +14,7 @@
     "smoke:admin-stats": "node scripts/smoke-admin-stats.mjs",
     "smoke:store": "node scripts/smoke-store.mjs",
     "smoke:engine": "node --experimental-modules scripts/smoke-engine.mjs",
+  "smoke:engine:api": "node scripts/smoke-engine-api.mjs",
     "smoke:live-ai": "node scripts/smoke-live-ai.mjs",
     "postinstall": "prisma generate"
   },
