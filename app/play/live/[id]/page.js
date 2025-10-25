@@ -9,8 +9,9 @@ export default function LivePlayPage({ params }) {
   const { id } = use(params);
   const search = useSearchParams();
   const token = search.get('t');
-  const tc = Number(search.get('tc') || '0'); // seconds
-  const inc = Number(search.get('inc') || '0'); // seconds per move
+  // Prefer server-provided time controls over URL hints
+  const urlTc = Number(search.get('tc') || '0'); // optional hint
+  const urlInc = Number(search.get('inc') || '0'); // optional hint
   const [match, setMatch] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -57,8 +58,10 @@ export default function LivePlayPage({ params }) {
 
   const fen = match?.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
   const gameOver = match && match.status !== 'ONGOING';
-  const whiteMsRef = useRef(Math.max(0, tc) * 1000);
-  const blackMsRef = useRef(Math.max(0, tc) * 1000);
+  const timed = (match?.tcSeconds ?? urlTc ?? 0) > 0;
+  const incSeconds = match?.incSeconds ?? urlInc ?? 0;
+  const whiteMsRef = useRef(0);
+  const blackMsRef = useRef(0);
   const lastSeenMoveAtRef = useRef(null);
   const lastSeenTurnRef = useRef(null);
 
@@ -109,8 +112,23 @@ export default function LivePlayPage({ params }) {
   const matchLastAt = match?.lastMoveAt;
   const matchTurn = match?.turn;
 
+  // Sync local clock refs when we first load or when server clock values change
   useEffect(() => {
-    if (!matchLastAt || !tc) return;
+    if (!match) return;
+    if (!timed) { setClock(null); return; }
+    const w = Number(match.whiteTimeMs) || Math.max(0, (match.tcSeconds || urlTc || 0) * 1000);
+    const b = Number(match.blackTimeMs) || Math.max(0, (match.tcSeconds || urlTc || 0) * 1000);
+    whiteMsRef.current = Math.max(0, w);
+    blackMsRef.current = Math.max(0, b);
+    try {
+      const lastAt = match.lastMoveAt ? new Date(match.lastMoveAt).getTime() : Date.now();
+      lastSeenMoveAtRef.current = lastAt;
+      lastSeenTurnRef.current = match.turn;
+    } catch {}
+  }, [match, urlTc, urlInc, timed]);
+
+  useEffect(() => {
+    if (!matchLastAt || !timed) return;
     const lastAt = new Date(matchLastAt).getTime();
     if (lastSeenMoveAtRef.current == null) {
       lastSeenMoveAtRef.current = lastAt;
@@ -122,24 +140,24 @@ export default function LivePlayPage({ params }) {
       const mover = matchTurn === 'w' ? 'b' : 'w';
       const elapsed = Math.max(0, lastAt - (lastSeenMoveAtRef.current || lastAt));
       if (mover === 'w') {
-        whiteMsRef.current = Math.max(0, whiteMsRef.current - elapsed + inc * 1000);
+        whiteMsRef.current = Math.max(0, whiteMsRef.current - elapsed + incSeconds * 1000);
       } else {
-        blackMsRef.current = Math.max(0, blackMsRef.current - elapsed + inc * 1000);
+        blackMsRef.current = Math.max(0, blackMsRef.current - elapsed + incSeconds * 1000);
       }
       lastSeenMoveAtRef.current = lastAt;
       lastSeenTurnRef.current = matchTurn;
     }
-  }, [matchLastAt, matchTurn, tc, inc]);
+  }, [matchLastAt, matchTurn, timed, incSeconds]);
 
   // Update display clocks every second while active
   useEffect(() => {
-    if (!tc) return;
+    if (!timed) return;
     const now = Date.now();
     const lastAt = matchLastAt ? new Date(matchLastAt).getTime() : now;
     const w = matchTurn === 'w' ? Math.max(0, whiteMsRef.current - (now - lastAt)) : whiteMsRef.current;
     const b = matchTurn === 'b' ? Math.max(0, blackMsRef.current - (now - lastAt)) : blackMsRef.current;
     setClock({ w, b });
-  }, [tick, tc, matchLastAt, matchTurn]);
+  }, [tick, timed, matchLastAt, matchTurn]);
 
   function fmtClock(ms) {
     const s = Math.max(0, Math.floor(ms / 1000));
@@ -602,7 +620,7 @@ export default function LivePlayPage({ params }) {
               </div>
 
               {/* Player Clocks */}
-              {tc ? (
+              {timed ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div className={`rounded-2xl border-2 px-4 py-3 transition-all duration-300 ${
                     match?.turn==='w' 
@@ -613,7 +631,7 @@ export default function LivePlayPage({ params }) {
                       <span className="text-2xl">♔</span>
                       <span className="font-bold text-gray-900">White</span>
                     </div>
-                    <div className="text-2xl font-bold tabular-nums text-gray-900">{fmtClock(clock?.w ?? 0)}</div>
+                    <div className="text-2xl font-bold tabular-nums text-gray-900">{fmtClock(clock?.w ?? (match?.whiteTimeMs || 0))}</div>
                   </div>
                   <div className={`rounded-2xl border-2 px-4 py-3 transition-all duration-300 ${
                     match?.turn==='b' 
@@ -624,7 +642,7 @@ export default function LivePlayPage({ params }) {
                       <span className="text-2xl">♚</span>
                       <span className="font-bold text-gray-900">Black</span>
                     </div>
-                    <div className="text-2xl font-bold tabular-nums text-gray-900">{fmtClock(clock?.b ?? 0)}</div>
+                    <div className="text-2xl font-bold tabular-nums text-gray-900">{fmtClock(clock?.b ?? (match?.blackTimeMs || 0))}</div>
                   </div>
                 </div>
               ) : null}
