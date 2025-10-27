@@ -19,6 +19,10 @@ export const metadata = {
   description: "Find expert chess trainers and compete in tournaments",
 };
 
+// Prevent static prerendering across the app so DB reads (Prisma) don't execute at build time
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

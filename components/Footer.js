@@ -6,7 +6,13 @@ import NewsletterForm from '@/components/footer/NewsletterForm';
 export const dynamic = 'force-dynamic';
 
 export default async function Footer() {
-  const settings = await prisma.siteSettings.findUnique({ where: { id: 'site' } });
+  let settings = null;
+  try {
+    settings = await prisma.siteSettings.findUnique({ where: { id: 'site' } });
+  } catch (e) {
+    // On build or when DB is unavailable, render with safe defaults
+    settings = null;
+  }
   // Pass only serializable fields needed by client components (avoid Date objects)
   const socialSettings = {
     facebookUrl: settings?.facebookUrl || null,
