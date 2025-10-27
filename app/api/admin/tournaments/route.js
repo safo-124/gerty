@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 import { tournamentSchema } from '@/lib/validation';
+import { refreshTournamentStatuses } from '@/lib/tournaments';
 
 export async function GET(request) {
   try {
@@ -18,6 +19,9 @@ export async function GET(request) {
     if (!user || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    // Keep statuses current for admin views as well
+    await refreshTournamentStatuses();
 
     const tournaments = await prisma.tournament.findMany({
       orderBy: { createdAt: 'desc' },
@@ -39,12 +43,12 @@ export async function GET(request) {
         endDate: tournament.endDate,
         registrationEnd: tournament.registrationEnd,
         maxParticipants: tournament.maxParticipants,
-        entryFee: tournament.entryFee,
-  registrationFree: tournament.registrationFree,
+    entryFee: tournament.entryFee,
+    registrationFree: tournament.registrationFree,
         prizePool: tournament.prizePool,
         format: tournament.format,
         timeControl: tournament.timeControl,
-  mode: tournament.mode,
+    mode: tournament.mode,
         image: tournament.image,
         rules: tournament.rules,
         createdAt: tournament.createdAt,

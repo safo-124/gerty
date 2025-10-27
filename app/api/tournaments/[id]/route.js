@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { refreshTournamentStatuses } from '@/lib/tournaments';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(request, { params }) {
   try {
+    // Refresh statuses to ensure this tournament reflects the current lifecycle
+    await refreshTournamentStatuses();
+
     const { id } = await params;
 
     const tournament = await prisma.tournament.findUnique({

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 
+// Ensure Node runtime (crypto/prisma not available on Edge)
+export const runtime = 'nodejs';
+
 function makeToken() {
   try {
     return crypto.randomBytes(24).toString('base64url');

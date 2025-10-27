@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Chess } from 'chess.js';
 
+export const runtime = 'nodejs';
+
 export async function GET(request, { params }) {
   try {
     const { id } = params || {};

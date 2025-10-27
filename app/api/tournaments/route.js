@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { refreshTournamentStatuses } from '@/lib/tournaments';
 // Public tournaments listing; creation is handled via admin API
 
 export async function GET(request) {
   try {
+    // Ensure statuses reflect current time before returning listings
+    await refreshTournamentStatuses();
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import { refreshTournamentStatuses } from '@/lib/tournaments';
 
 export async function GET(request) {
   try {
+    // Ensure statuses are up to date for the student's view
+    await refreshTournamentStatuses();
+
     // Verify authentication
     const authResult = await verifyAuth(request);
     if (!authResult.valid) {

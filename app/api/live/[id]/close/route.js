@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 export async function POST(request, { params }) {
   try {
     const { id } = params || {};
