@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { deleteIfFinishedHumanMatch } from '@/lib/live';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +28,7 @@ export async function POST(request, { params }) {
     if (match.drawOffer && match.drawOffer !== side) {
       const saved = await prisma.liveMatch.update({ where: { id }, data: { status: 'DRAW', result: '1/2-1/2', drawOffer: null } });
       const { whiteToken, blackToken, ...safe } = saved; 
+      await deleteIfFinishedHumanMatch(saved);
       return NextResponse.json({ match: safe });
     }
     return NextResponse.json({ error: 'You already offered a draw' }, { status: 400 });

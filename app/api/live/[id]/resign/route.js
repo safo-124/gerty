@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { deleteIfFinishedHumanMatch } from '@/lib/live';
 
 export const runtime = 'nodejs';
 
@@ -22,7 +23,8 @@ export async function POST(request, { params }) {
       where: { id },
       data: { status: 'RESIGNATION', result },
     });
-    const { whiteToken, blackToken, ...safe } = saved;
+  const { whiteToken, blackToken, ...safe } = saved;
+  await deleteIfFinishedHumanMatch(saved);
     return NextResponse.json({ match: safe });
   } catch (error) {
     console.error('Live resign error:', error);

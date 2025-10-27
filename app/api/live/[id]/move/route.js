@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getBestMoveWithStockfish, uciToMove } from '@/lib/stockfish';
+import { deleteIfFinishedHumanMatch } from '@/lib/live';
 
 export const runtime = 'nodejs';
 
@@ -62,13 +63,17 @@ export async function POST(request, { params }) {
         wTime = Math.max(0, wTime - elapsed);
         if (wTime <= 0) {
           const savedTimeout = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '0-1' } });
-          const { whiteToken, blackToken, ...safe } = savedTimeout; return NextResponse.json({ match: safe });
+          const { whiteToken, blackToken, ...safe } = savedTimeout;
+          await deleteIfFinishedHumanMatch(savedTimeout);
+          return NextResponse.json({ match: safe });
         }
       } else {
         bTime = Math.max(0, bTime - elapsed);
         if (bTime <= 0) {
           const savedTimeout = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '1-0' } });
-          const { whiteToken, blackToken, ...safe } = savedTimeout; return NextResponse.json({ match: safe });
+          const { whiteToken, blackToken, ...safe } = savedTimeout;
+          await deleteIfFinishedHumanMatch(savedTimeout);
+          return NextResponse.json({ match: safe });
         }
       }
     }
@@ -108,7 +113,7 @@ export async function POST(request, { params }) {
       updated.blackTimeMs = bTime;
     }
 
-    let saved = await prisma.liveMatch.update({ where: { id }, data: updated });
+  let saved = await prisma.liveMatch.update({ where: { id }, data: updated });
 
     // If opponent is AI and game still ongoing and now it's AI's turn, make AI move
     const aiSide = aiWhite ? 'w' : aiBlack ? 'b' : undefined;
@@ -137,13 +142,17 @@ export async function POST(request, { params }) {
           w2 = Math.max(0, w2 - elapsed2);
           if (w2 <= 0) {
             const tSaved = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '0-1' } });
-            const { whiteToken, blackToken, ...safe } = tSaved; return NextResponse.json({ match: safe });
+            const { whiteToken, blackToken, ...safe } = tSaved;
+            await deleteIfFinishedHumanMatch(tSaved);
+            return NextResponse.json({ match: safe });
           }
         } else {
           b2 = Math.max(0, b2 - elapsed2);
           if (b2 <= 0) {
             const tSaved = await prisma.liveMatch.update({ where: { id }, data: { status: 'TIMEOUT', result: '1-0' } });
-            const { whiteToken, blackToken, ...safe } = tSaved; return NextResponse.json({ match: safe });
+            const { whiteToken, blackToken, ...safe } = tSaved;
+            await deleteIfFinishedHumanMatch(tSaved);
+            return NextResponse.json({ match: safe });
           }
         }
         // Fallback to a legal move if SF fails
@@ -210,7 +219,8 @@ export async function POST(request, { params }) {
       }
     }
 
-    const { whiteToken, blackToken, ...safe } = saved;
+  const { whiteToken, blackToken, ...safe } = saved;
+  await deleteIfFinishedHumanMatch(saved);
     return NextResponse.json({ match: safe });
   } catch (error) {
     console.error('Live move error:', error);

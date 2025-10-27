@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import { deleteIfFinishedHumanMatch } from '@/lib/live';
 
 export const runtime = 'nodejs';
 
@@ -38,8 +39,9 @@ export async function POST(request, { params }) {
       status = 'DRAW'; result = '1/2-1/2';
     }
 
-    const saved = await prisma.liveMatch.update({ where: { id }, data: { status, result } });
-    const { whiteToken, blackToken, ...safe } = saved;
+  const saved = await prisma.liveMatch.update({ where: { id }, data: { status, result } });
+  const { whiteToken, blackToken, ...safe } = saved;
+  await deleteIfFinishedHumanMatch(saved);
     return NextResponse.json({ match: safe });
   } catch (error) {
     console.error('Live close error:', error);
