@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 function getWindowIndex(seconds) {
   const s = Math.max(1, Number(seconds) || 300);
@@ -66,7 +67,13 @@ function pickHeuristicMove(moves, chess, style = 'agg') {
 
 export async function GET() {
   try {
-    const settings = await prisma.siteSettings.findUnique({ where: { id: 'site' } });
+    let settings = null;
+    try {
+      settings = await prisma.siteSettings.findUnique({ where: { id: 'site' } });
+    } catch (err) {
+      // Graceful degradation when DB is blocked/unavailable (e.g., Prisma plan hold)
+      return NextResponse.json({ enabled: false, rotationSeconds: 300, items: [] });
+    }
     if (!settings || !settings.homepageLiveEnabled) {
       return NextResponse.json({ enabled: false, rotationSeconds: settings?.homepageLiveRotationSeconds || 300, items: [] });
     }
@@ -242,6 +249,7 @@ export async function GET() {
     return NextResponse.json({ enabled: true, rotationSeconds, items });
   } catch (e) {
     console.error('Homepage live API error', e);
-    return NextResponse.json({ enabled: false, items: [], error: 'Failed' }, { status: 500 });
+    // Return disabled but 200 to avoid homepage hard-fail while still logging the error
+    return NextResponse.json({ enabled: false, items: [] });
   }
 }

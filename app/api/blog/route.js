@@ -38,31 +38,40 @@ export async function GET(request) {
       ...(tag ? { tags: { has: tag } } : {}),
     };
 
-    const [items, total] = await Promise.all([
-      prisma.blogPost.findMany({
-        where,
-        orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-        take,
-        skip,
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          excerpt: true,
-          coverImage: true,
-          category: true,
-          tags: true,
-          publishedAt: true,
-          createdAt: true,
-        },
-      }),
-      prisma.blogPost.count({ where }),
-    ]);
+    let items = [];
+    let total = 0;
+    try {
+      const res = await Promise.all([
+        prisma.blogPost.findMany({
+          where,
+          orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+          take,
+          skip,
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            excerpt: true,
+            coverImage: true,
+            category: true,
+            tags: true,
+            publishedAt: true,
+            createdAt: true,
+          },
+        }),
+        prisma.blogPost.count({ where }),
+      ]);
+      items = res[0];
+      total = res[1];
+    } catch (err) {
+      // Graceful degradation when DB is blocked/unavailable
+      return NextResponse.json({ items: [], total: 0, page, pageSize: take });
+    }
 
     return NextResponse.json({ items, total, page, pageSize: take });
   } catch (error) {
     console.error('Blog GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
+    return NextResponse.json({ items: [], total: 0, page: 1, pageSize: 0 });
   }
 }
 

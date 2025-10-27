@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+export const runtime = 'nodejs';
+
 export async function GET(request) {
   try {
     const userData = getUserFromRequest(request);
@@ -17,15 +19,6 @@ export async function GET(request) {
     const user = await prisma.user.findUnique({
       where: { id: userData.userId },
       include: {
-        trainerProfile: true,
-        studentProfile: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
         trainerProfile: true,
         studentProfile: true,
       },
